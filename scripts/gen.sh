@@ -18,3 +18,7 @@ if [ "${GENS}" = "api" ] || grep -qw "api" <<<"${GENS}"; then
      --verify-only=false \
      --proto-import "${GOPATH}"/src/k8s.io/api/core/v1
 fi
+
+if [ "${GENS}" = "deepcopy" ] || grep -qw "deepcopy" <<<"${GENS}"; then
+  "${GOPATH}/bin/deepcopy-gen" --input-dirs "$ROOT_PACKAGE/pkg/proto" -O zz_generated.deepcopy --bounding-dirs "$CUSTOM_RESOURCE_NAME:$CUSTOM_RESOURCE_VERSION" "$@"
+fi

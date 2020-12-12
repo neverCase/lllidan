@@ -1,8 +1,8 @@
-.PHONY: build mod proto docker-clean
+.PHONY: build mod proto deepCopy docker-clean
 
 HARBOR_DOMAIN := $(shell echo ${HARBOR})
 PROJECT := lunara-common
-REGISTER_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/register:latest"
+REGISTER_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-register:latest"
 
 mod:
 	go mod download
@@ -11,5 +11,10 @@ mod:
 proto:
 	cd scripts && GENS=api bash ./gen.sh
 
+deepCopy:
+	go mod vendor
+	cd scripts && GENS=deepcopy bash ./gen.sh
+	rm -rf vendor
+
 docker-clean:
-	echo $(shell docker images | grep none | awk '{print $3}' | xargs docker image rm -f)
+	echo $(shell docker images | grep lllidan | grep none | awk '{print $3}' | xargs docker image rm -f)
