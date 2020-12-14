@@ -28,7 +28,7 @@ func Init(c *config.Config) *Server {
 	router.GET(proto.RouterDashboard, s.handlerDashboard)
 	router.GET(proto.RouterGateway, s.handlerGateway)
 	server := &http.Server{
-		Addr:    fmt.Sprintf("0.0.0.0:%d", c.Register.ListenPort),
+		Addr:    fmt.Sprintf("0.0.0.0:%d", c.Logic.ListenPort),
 		Handler: router,
 	}
 	s.server = server
