@@ -25,8 +25,8 @@ func Init(c *config.Config) *Server {
 	}
 	router := gin.New()
 	router.Use(cors.Default())
-	router.GET(proto.RouterDashboard, s.handlerDashboard)
-	router.GET(proto.RouterGateway, s.handlerGateway)
+	router.GET(proto.RouterDashboard, s.wsHandlerDashboard)
+	router.GET(proto.RouterGateway, s.wsHandlerGateway)
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", c.Logic.ListenPort),
 		Handler: router,
@@ -44,10 +44,10 @@ func Init(c *config.Config) *Server {
 	return s
 }
 
-func (s *Server) handlerDashboard(c *gin.Context) {
+func (s *Server) wsHandlerDashboard(c *gin.Context) {
 	//s.connections.handler(c.Writer, c.Request, connTypeDashboard, )
 }
 
-func (s *Server) handlerGateway(c *gin.Context) {
+func (s *Server) wsHandlerGateway(c *gin.Context) {
 
 }
