@@ -15,6 +15,7 @@ type Server struct {
 	c           *config.Config
 	server      *http.Server
 	connections *connections
+	manager     *manager
 	ctx         context.Context
 }
 
@@ -22,6 +23,7 @@ func Init(c *config.Config) *Server {
 	s := &Server{
 		c:           c,
 		connections: NewConnections(context.Background()),
+		manager:     newManager(),
 	}
 	router := gin.New()
 	router.Use(cors.Default())
@@ -45,9 +47,9 @@ func Init(c *config.Config) *Server {
 }
 
 func (s *Server) wsHandlerDashboard(c *gin.Context) {
-	//s.connections.handler(c.Writer, c.Request, connTypeDashboard, )
+	s.connections.handler(c.Writer, c.Request, connTypeDashboard, s.handlerDashboard)
 }
 
 func (s *Server) wsHandlerGateway(c *gin.Context) {
-
+	s.connections.handler(c.Writer, c.Request, connTypeDashboard, s.handlerGateway)
 }

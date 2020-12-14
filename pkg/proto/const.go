@@ -12,5 +12,6 @@ const (
 type ServiceAPI string
 
 const (
+	APIPing            ServiceAPI = "ping"
 	APIGatewayRegister ServiceAPI = "gatewayRegister"
 )

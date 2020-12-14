@@ -33,13 +33,17 @@ func NewConnections(ctx context.Context) *connections {
 		ctx:              ctx,
 	}
 	go cs.remove()
+	go cs.loopDashboardChan()
+	go cs.loopGatewayChan()
 	return cs
 }
 
 type connections struct {
 	autoIncr         int32
 	dashboardClients cmap.ConcurrentMap
+	dashboardChan    chan []byte
 	gatewayClients   cmap.ConcurrentMap
+	gatewayChan      chan []byte
 	removedChan      chan *removeConn
 	ctx              context.Context
 }
@@ -81,6 +85,52 @@ func (cs *connections) remove() {
 			}
 			t := obj.(cmap.ConcurrentMap)
 			t.Remove(shardKey)
+		}
+	}
+}
+
+func (cs *connections) loopGatewayChan() {
+	for {
+		select {
+		case <-cs.ctx.Done():
+			return
+		case o, isClose := <-cs.gatewayChan:
+			if !isClose {
+				return
+			}
+			all := cs.gatewayClients.Items()
+			var wg sync.WaitGroup
+			wg.Add(len(all))
+			for _, v := range all {
+				go func(conn *conn) {
+					conn.writeChan <- o
+					wg.Done()
+				}(v.(*conn))
+			}
+			wg.Wait()
+		}
+	}
+}
+
+func (cs *connections) loopDashboardChan() {
+	for {
+		select {
+		case <-cs.ctx.Done():
+			return
+		case o, isClose := <-cs.dashboardChan:
+			if !isClose {
+				return
+			}
+			all := cs.dashboardClients.Items()
+			var wg sync.WaitGroup
+			wg.Add(len(all))
+			for _, v := range all {
+				go func(conn *conn) {
+					conn.writeChan <- o
+					wg.Done()
+				}(v.(*conn))
+			}
+			wg.Wait()
 		}
 	}
 }
@@ -135,7 +185,7 @@ func (cs *connections) newConn(w http.ResponseWriter, r *http.Request, connType 
 	return c, nil
 }
 
-type connHandler func(data []byte, do func(), outputChan chan<- []byte) (res []byte, err error)
+type connHandler func(data []byte, ping func(), outputChan chan<- []byte) (res []byte, err error)
 
 type conn struct {
 	id                    int32

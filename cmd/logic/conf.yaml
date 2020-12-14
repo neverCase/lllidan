@@ -1,4 +1,4 @@
-# This the configuration file of the Lllidan
+# This is the configuration file of the Lllidan
 Logic:
   listenPort: 12306
   kubernetesService:
