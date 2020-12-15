@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	cmap "github.com/nevercase/concurrent-map"
+	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
 	"net/http"
 	"sync"
@@ -28,7 +29,9 @@ func NewConnections(ctx context.Context) *connections {
 	cs := &connections{
 		autoIncr:         0,
 		dashboardClients: cmap.New(),
+		dashboardChan:    make(chan []byte, 1024),
 		gatewayClients:   cmap.New(),
+		gatewayChan:      make(chan []byte, 1024),
 		removedChan:      make(chan *removeConn, 4096),
 		ctx:              ctx,
 	}
@@ -89,6 +92,11 @@ func (cs *connections) remove() {
 	}
 }
 
+const (
+	multiplexWaitingTimeInMS = 20
+	multiplexMaxLength       = 200
+)
+
 func (cs *connections) loopGatewayChan() {
 	for {
 		select {
@@ -98,12 +106,42 @@ func (cs *connections) loopGatewayChan() {
 			if !isClose {
 				return
 			}
+			req := &proto.Request{
+				ServiceAPI: proto.APIMultiplex,
+				Data:       make([][]byte, 1000),
+			}
+			index := 0
+			req.Data[index] = o
+			after := time.After(time.Millisecond * multiplexWaitingTimeInMS)
+			for {
+				select {
+				case <-cs.ctx.Done():
+					return
+				case <-after:
+					break
+				case appendMsg, isClose := <-cs.gatewayChan:
+					if !isClose {
+						break
+					}
+					index++
+					req.Data[index] = appendMsg
+				}
+				if index+1 >= multiplexMaxLength {
+					break
+				}
+			}
+			klog.Info("gateway message length: ", index+1)
+			data, err := req.Marshal()
+			if err != nil {
+				klog.V(2).Info(err)
+				continue
+			}
 			all := cs.gatewayClients.Items()
 			var wg sync.WaitGroup
 			wg.Add(len(all))
 			for _, v := range all {
 				go func(conn *conn) {
-					conn.writeChan <- o
+					conn.writeChan <- data
 					wg.Done()
 				}(v.(*conn))
 			}

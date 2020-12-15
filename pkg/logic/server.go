@@ -46,6 +46,10 @@ func Init(c *config.Config) *Server {
 	return s
 }
 
+func (s *Server) Shutdown() {
+
+}
+
 func (s *Server) wsHandlerDashboard(c *gin.Context) {
 	s.connections.handler(c.Writer, c.Request, connTypeDashboard, s.handlerDashboard)
 }

@@ -29,8 +29,14 @@ func (m *manager) gatewayRegister(gateway *proto.Gateway) {
 	}
 }
 
-func (m *manager) listGateway() {
-
+func (m *manager) listGateway() (res []byte, err error) {
+	response := &proto.GatewayList{
+		Items: make([]proto.Gateway, 0),
+	}
+	for _, v := range m.gateways {
+		response.Items = append(response.Items, v)
+	}
+	return response.Marshal()
 }
 
 func (s *Server) handlerDashboard(data []byte, ping func(), outputChan chan<- []byte) (res []byte, err error) {
@@ -62,7 +68,12 @@ func (s *Server) handlerGateway(data []byte, ping func(), outputChan chan<- []by
 		}
 		s.manager.gatewayRegister(obj)
 		// todo sync to all the gateway clients
-
+		res, err = s.manager.listGateway()
+		if err != nil {
+			klog.V(2).Info(err)
+			return nil, err
+		}
+		s.connections.gatewayChan <- res
 		// todo sync to all the dashboards
 	}
 	return res, nil

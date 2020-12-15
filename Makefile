@@ -18,3 +18,6 @@ deepCopy:
 
 docker-clean:
 	echo $(shell docker images | grep lllidan | grep none | awk '{print $3}' | xargs docker image rm -f)
+
+logic:
+	go run cmd/logic/main.go -configPath=./cmd/logic/conf.yaml -alsologtostderr=true -v=4
