@@ -30,6 +30,8 @@ message Gateway {
   optional string ip = 2;
 
   optional int32 port = 3;
+
+  optional int32 nodePort = 4;
 }
 
 message GatewayList {

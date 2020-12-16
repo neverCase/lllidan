@@ -55,5 +55,5 @@ func (s *Server) wsHandlerDashboard(c *gin.Context) {
 }
 
 func (s *Server) wsHandlerGateway(c *gin.Context) {
-	s.connections.handler(c.Writer, c.Request, connTypeDashboard, s.handlerGateway)
+	s.connections.handler(c.Writer, c.Request, connTypeGateway, s.handlerGateway)
 }

@@ -73,21 +73,21 @@ func (cs *connections) remove() {
 				return
 			}
 			shardKey := shardKey(o.id)
-			var (
-				obj interface{}
-				ok  bool
-			)
+			//var (
+			//	obj interface{}
+			//	ok  bool
+			//)
 			switch o.connType {
 			case connTypeDashboard:
-				obj, ok = cs.dashboardClients.Get(shardKey)
+				cs.dashboardClients.Remove(shardKey)
 			case connTypeGateway:
-				obj, ok = cs.gatewayClients.Get(shardKey)
+				cs.gatewayClients.Remove(shardKey)
 			}
-			if !ok {
-				continue
-			}
-			t := obj.(cmap.ConcurrentMap)
-			t.Remove(shardKey)
+			//if !ok {
+			//	continue
+			//}
+			//t := obj.(cmap.ConcurrentMap)
+			//t.Remove(shardKey)
 		}
 	}
 }
@@ -113,11 +113,13 @@ func (cs *connections) loopGatewayChan() {
 			index := 0
 			req.Data[index] = o
 			after := time.After(time.Millisecond * multiplexWaitingTimeInMS)
+			timeout := false
 			for {
 				select {
 				case <-cs.ctx.Done():
 					return
 				case <-after:
+					timeout = true
 					break
 				case appendMsg, isClose := <-cs.gatewayChan:
 					if !isClose {
@@ -126,11 +128,13 @@ func (cs *connections) loopGatewayChan() {
 					index++
 					req.Data[index] = appendMsg
 				}
+				if timeout {
+					break
+				}
 				if index+1 >= multiplexMaxLength {
 					break
 				}
 			}
-			klog.Info("gateway message length: ", index+1)
 			data, err := req.Marshal()
 			if err != nil {
 				klog.V(2).Info(err)
@@ -140,10 +144,11 @@ func (cs *connections) loopGatewayChan() {
 			var wg sync.WaitGroup
 			wg.Add(len(all))
 			for _, v := range all {
+				a := v.(*conn)
 				go func(conn *conn) {
 					conn.writeChan <- data
 					wg.Done()
-				}(v.(*conn))
+				}(a)
 			}
 			wg.Wait()
 		}
@@ -184,17 +189,19 @@ func (cs *connections) handler(w http.ResponseWriter, r *http.Request, connType 
 		return
 	}
 	shardKey := shardKey(client.id)
-	var obj interface{}
+	//var obj interface{}
 	switch connType {
 	case connTypeDashboard:
-		cs.dashboardClients.SetIfAbsent(shardKey, cmap.New())
-		obj, _ = cs.dashboardClients.Get(shardKey)
+		//cs.dashboardClients.SetIfAbsent(shardKey, cmap.New())
+		//obj, _ = cs.dashboardClients.Get(shardKey)
+		cs.dashboardClients.Set(shardKey, client)
 	case connTypeGateway:
-		cs.gatewayClients.SetIfAbsent(shardKey, cmap.New())
-		obj, _ = cs.gatewayClients.Get(shardKey)
+		//cs.gatewayClients.SetIfAbsent(shardKey, cmap.New())
+		//obj, _ = cs.gatewayClients.Get(shardKey)
+		cs.gatewayClients.Set(shardKey, client)
 	}
-	t := obj.(cmap.ConcurrentMap)
-	t.Set(shardKey, client)
+	//t := obj.(cmap.ConcurrentMap)
+	//t.Set(shardKey, client)
 }
 
 func (cs *connections) newConn(w http.ResponseWriter, r *http.Request, connType connType, handler connHandler) (*conn, error) {
@@ -273,8 +280,8 @@ func (c *conn) close() {
 func (c *conn) readPump() {
 	defer c.close()
 	for {
-		messageType, data, err := c.conn.ReadMessage()
-		klog.V(3).Infof("messageType: %d message-string: %s\n", messageType, string(data))
+		_, data, err := c.conn.ReadMessage()
+		//klog.V(3).Infof("messageType: %d message-string: %s\n", messageType, string(data))
 		if err != nil {
 			klog.V(2).Info(err)
 			return

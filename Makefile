@@ -21,3 +21,6 @@ docker-clean:
 
 logic:
 	go run cmd/logic/main.go -configPath=./cmd/logic/conf.yaml -alsologtostderr=true -v=4
+
+gateway:
+	go run cmd/gateway/main.go -configPath=./cmd/gateway/conf.yaml -alsologtostderr=true -v=4

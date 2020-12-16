@@ -2,7 +2,9 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/nevercase/lllidan/pkg/config"
 	"github.com/nevercase/lllidan/pkg/logic"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
@@ -11,30 +13,36 @@ import (
 	"time"
 )
 
-func NewClientWithRecover(addr string, stop <-chan struct{}, handler chan<- []byte) (*Client, error) {
+func NewClientWithRecover(c *config.Config, stop <-chan struct{}, handler chan<- []byte) {
 	for {
-		client, err := NewClient(addr, handler)
+		client, err := NewClient(c, handler)
 		if err != nil {
 			klog.V(2).Info(err)
-			//continue
-			return nil, err
+			time.Sleep(time.Second * 5)
+			continue
+			//return
 		}
 		select {
-		case <-client.Done():
+		case <-client.done():
 		case <-stop:
-			return nil, nil
+			return
 		}
 	}
 }
 
-func NewClient(addr string, handler chan<- []byte) (*Client, error) {
-	u := url.URL{Scheme: "ws", Host: addr, Path: proto.RouterGateway}
+func NewClient(conf *config.Config, handler chan<- []byte) (*Client, error) {
+	u := url.URL{
+		Scheme: "ws",
+		Host:   fmt.Sprintf("%s:%d", conf.Logic.KubernetesService.Name, conf.Logic.KubernetesService.Port),
+		Path:   proto.RouterGateway,
+	}
 	a, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
+		conf:        conf,
 		conn:        a,
 		writeChan:   make(chan []byte, 1024),
 		handlerChan: handler,
@@ -51,6 +59,7 @@ func NewClient(addr string, handler chan<- []byte) (*Client, error) {
 }
 
 type Client struct {
+	conf        *config.Config
 	conn        *websocket.Conn
 	writeChan   chan []byte
 	handlerChan chan<- []byte
@@ -59,7 +68,7 @@ type Client struct {
 	cancel      context.CancelFunc
 }
 
-func (c *Client) Done() <-chan struct{} {
+func (c *Client) done() <-chan struct{} {
 	return c.ctx.Done()
 }
 
@@ -124,10 +133,15 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) registerGateway() (err error) {
+	var hostname string
+	if hostname, err = GetHostName(); err != nil {
+		return err
+	}
 	gw := &proto.Gateway{
-		Hostname: "",
-		Ip:       "",
-		Port:     0,
+		Hostname: hostname,
+		Ip:       c.conf.Gateway.KubernetesService.Name,
+		Port:     int32(c.conf.Gateway.KubernetesService.Port),
+		NodePort: int32(c.conf.Gateway.KubernetesService.NodePort),
 	}
 	var data []byte
 	if data, err = gw.Marshal(); err != nil {

@@ -13,18 +13,18 @@ type KubernetesService struct {
 }
 
 type Logic struct {
-	ListenPort        int    `json:"listenPort" yaml:"listenPort"`
-	KubernetesService string `json:"kubernetesService" yaml:"kubernetesService"`
+	ListenPort        int               `json:"listenPort" yaml:"listenPort"`
+	KubernetesService KubernetesService `json:"kubernetesService" yaml:"kubernetesService"`
 }
 
 type Gateway struct {
-	ListenPort        int    `json:"listenPort" yaml:"listenPort"`
-	KubernetesService string `json:"kubernetesService" yaml:"kubernetesService"`
+	ListenPort        int               `json:"listenPort" yaml:"listenPort"`
+	KubernetesService KubernetesService `json:"kubernetesService" yaml:"kubernetesService"`
 }
 
 type Config struct {
-	Logic   Logic   `yaml:"GameService,flow"`
-	Gateway Gateway `yaml:"GmtService,flow"`
+	Logic   Logic   `yaml:"Logic"`
+	Gateway Gateway `yaml:"Gateway"`
 }
 
 func Init(configFile string) *Config {
