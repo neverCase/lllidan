@@ -107,7 +107,7 @@ func (cs *connections) loopGatewayChan() {
 				return
 			}
 			req := &proto.Request{
-				ServiceAPI: proto.APIMultiplex,
+				ServiceAPI: proto.ServiceAPIMultiplex,
 			}
 			res := make([][]byte, multiplexMaxLength)
 			index := 0

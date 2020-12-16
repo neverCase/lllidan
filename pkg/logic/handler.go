@@ -45,7 +45,7 @@ func (s *Server) handlerDashboard(data []byte, ping func(), outputChan chan<- []
 		klog.V(2).Info(err)
 	}
 	switch req.ServiceAPI {
-	case proto.APIPing:
+	case proto.ServiceAPIPing:
 		ping()
 	}
 	return res, nil
@@ -58,9 +58,9 @@ func (s *Server) handlerGateway(data []byte, ping func(), outputChan chan<- []by
 		return nil, err
 	}
 	switch req.ServiceAPI {
-	case proto.APIPing:
+	case proto.ServiceAPIPing:
 		ping()
-	case proto.APIGatewayRegister:
+	case proto.ServiceAPIGatewayRegister:
 		obj := &proto.Gateway{}
 		if err = obj.Unmarshal(req.Data[0]); err != nil {
 			klog.V(2).Info(err)

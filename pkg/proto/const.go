@@ -12,7 +12,8 @@ const (
 type ServiceAPI string
 
 const (
-	APIPing            ServiceAPI = "ping"
-	APIGatewayRegister ServiceAPI = "gatewayRegister"
-	APIMultiplex       ServiceAPI = "multiplex"
+	ServiceAPIPing            ServiceAPI = "ping"
+	ServiceAPIGatewayRegister ServiceAPI = "gatewayRegister"
+	ServiceAPIGatewayList     ServiceAPI = "gatewayList"
+	ServiceAPIMultiplex       ServiceAPI = "multiplex"
 )
