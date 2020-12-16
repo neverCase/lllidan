@@ -108,10 +108,10 @@ func (cs *connections) loopGatewayChan() {
 			}
 			req := &proto.Request{
 				ServiceAPI: proto.APIMultiplex,
-				Data:       make([][]byte, 1000),
 			}
+			res := make([][]byte, multiplexMaxLength)
 			index := 0
-			req.Data[index] = o
+			res[index] = o
 			after := time.After(time.Millisecond * multiplexWaitingTimeInMS)
 			timeout := false
 			for {
@@ -126,7 +126,7 @@ func (cs *connections) loopGatewayChan() {
 						break
 					}
 					index++
-					req.Data[index] = appendMsg
+					res[index] = appendMsg
 				}
 				if timeout {
 					break
@@ -135,6 +135,8 @@ func (cs *connections) loopGatewayChan() {
 					break
 				}
 			}
+			req.Data = res[:index+1]
+			klog.Info("req:", *req)
 			data, err := req.Marshal()
 			if err != nil {
 				klog.V(2).Info(err)
@@ -292,7 +294,7 @@ func (c *conn) readPump() {
 			//return
 		}
 		if len(res) == 0 {
-			klog.V(3).Info("ws conn handler res len 0")
+			klog.V(5).Info("ws conn handler res len 0")
 			continue
 		}
 		c.writeChan <- res

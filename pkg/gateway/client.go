@@ -104,12 +104,17 @@ func (c *Client) ping() {
 func (c *Client) readPump() {
 	defer c.close()
 	for {
-		messageType, message, err := c.conn.ReadMessage()
-		klog.V(3).Infof("messageType: %d message: %s err:%v\n", messageType, string(message), err)
+		_, message, err := c.conn.ReadMessage()
+		//klog.V(3).Infof("messageType: %d message: %s err:%v\n", messageType, string(message), err)
 		if err != nil {
 			klog.V(2).Info(err)
 			return
 		}
+		req := &proto.Request{}
+		if err = req.Unmarshal(message); err != nil {
+			klog.V(2).Info(err)
+		}
+		klog.Info("req:", *req)
 		c.handlerChan <- message
 	}
 }
