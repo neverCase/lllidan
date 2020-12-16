@@ -13,6 +13,12 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 	stopCh := signals.SetupSignalHandler()
-	handler := make(chan []byte, 1024)
-	gateway.NewClientWithRecover(config.Init(*conf), stopCh, handler)
+	gateway.NewClientWithRecover(
+		config.Init(*conf),
+		stopCh,
+		&gateway.Option{
+			ReadHandler:  make(chan []byte, 1024),
+			WriteHandler: make(chan []byte, 1024),
+		},
+	)
 }

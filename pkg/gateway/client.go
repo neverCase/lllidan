@@ -13,9 +13,14 @@ import (
 	"time"
 )
 
-func NewClientWithRecover(c *config.Config, stop <-chan struct{}, handler chan<- []byte) {
+type Option struct {
+	ReadHandler  chan []byte
+	WriteHandler chan []byte
+}
+
+func NewClientWithRecover(c *config.Config, stop <-chan struct{}, opt *Option) {
 	for {
-		client, err := NewClient(c, handler)
+		client, err := NewClient(c, opt)
 		if err != nil {
 			klog.V(2).Info(err)
 			time.Sleep(time.Second * 5)
@@ -30,7 +35,7 @@ func NewClientWithRecover(c *config.Config, stop <-chan struct{}, handler chan<-
 	}
 }
 
-func NewClient(conf *config.Config, handler chan<- []byte) (*Client, error) {
+func NewClient(conf *config.Config, opt *Option) (*Client, error) {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   fmt.Sprintf("%s:%d", conf.Logic.KubernetesService.Name, conf.Logic.KubernetesService.Port),
@@ -49,8 +54,8 @@ func NewClient(conf *config.Config, handler chan<- []byte) (*Client, error) {
 		hostname:    hostname,
 		conf:        conf,
 		conn:        a,
-		writeChan:   make(chan []byte, 1024),
-		handlerChan: handler,
+		writeChan:   opt.WriteHandler,
+		handlerChan: opt.ReadHandler,
 		ctx:         ctx,
 		cancel:      cancel,
 	}
