@@ -16,4 +16,6 @@ const (
 	ServiceAPIGatewayRegister ServiceAPI = "gatewayRegister"
 	ServiceAPIGatewayList     ServiceAPI = "gatewayList"
 	ServiceAPIMultiplex       ServiceAPI = "multiplex"
+	// ServiceAPIKickAddress was only used in client
+	ServiceAPIKickAddress ServiceAPI = "kick"
 )

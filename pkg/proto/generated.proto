@@ -38,6 +38,14 @@ message GatewayList {
   repeated Gateway items = 1;
 }
 
+message KickInfo {
+  optional string hostname = 1;
+
+  optional string clientId = 2;
+
+  optional int32 id = 3;
+}
+
 message Request {
   optional string serviceApi = 1;
 

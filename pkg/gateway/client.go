@@ -40,8 +40,13 @@ func NewClient(conf *config.Config, handler chan<- []byte) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	var hostname string
+	if hostname, err = GetHostName(); err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
+		hostname:    hostname,
 		conf:        conf,
 		conn:        a,
 		writeChan:   make(chan []byte, 1024),
@@ -59,6 +64,7 @@ func NewClient(conf *config.Config, handler chan<- []byte) (*Client, error) {
 }
 
 type Client struct {
+	hostname    string
 	conf        *config.Config
 	conn        *websocket.Conn
 	writeChan   chan []byte
@@ -88,7 +94,7 @@ func (c *Client) ping() {
 			return
 		case <-tick.C:
 			req := &proto.Request{
-				ServiceAPI: proto.APIPing,
+				ServiceAPI: proto.ServiceAPIPing,
 				Data:       make([][]byte, 0),
 			}
 			data, err := req.Marshal()
@@ -110,11 +116,6 @@ func (c *Client) readPump() {
 			klog.V(2).Info(err)
 			return
 		}
-		req := &proto.Request{}
-		if err = req.Unmarshal(message); err != nil {
-			klog.V(2).Info(err)
-		}
-		klog.Info("req:", *req)
 		c.handlerChan <- message
 	}
 }
@@ -138,12 +139,8 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) registerGateway() (err error) {
-	var hostname string
-	if hostname, err = GetHostName(); err != nil {
-		return err
-	}
 	gw := &proto.Gateway{
-		Hostname: hostname,
+		Hostname: c.hostname,
 		Ip:       c.conf.Gateway.KubernetesService.Name,
 		Port:     int32(c.conf.Gateway.KubernetesService.Port),
 		NodePort: int32(c.conf.Gateway.KubernetesService.NodePort),
@@ -154,7 +151,7 @@ func (c *Client) registerGateway() (err error) {
 		return err
 	}
 	req := &proto.Request{
-		ServiceAPI: proto.APIGatewayRegister,
+		ServiceAPI: proto.ServiceAPIGatewayRegister,
 		Data:       make([][]byte, 0),
 	}
 	req.Data = append(req.Data, data)

@@ -22,3 +22,9 @@ type Gateway struct {
 	Port     int32  `json:"port" protobuf:"varint,3,opt,name=port"`
 	NodePort int32  `json:"nodePort" protobuf:"varint,4,opt,name=nodePort"`
 }
+
+type KickInfo struct {
+	Hostname string `json:"hostname" protobuf:"bytes,1,opt,name=hostname"`
+	ClientId string `json:"clientId" protobuf:"bytes,2,opt,name=clientId"`
+	Id       int32  `json:"id" protobuf:"bytes,3,opt,name=id"`
+}

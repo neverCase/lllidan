@@ -75,6 +75,8 @@ func (s *Server) handlerGateway(data []byte, ping func(), outputChan chan<- []by
 		}
 		s.connections.gatewayChan <- res
 		// todo sync to all the dashboards
+	case proto.ServiceAPIKickAddress:
+		s.connections.gatewayChan <- data
 	}
 	return res, nil
 }
