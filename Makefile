@@ -2,7 +2,14 @@
 
 HARBOR_DOMAIN := $(shell echo ${HARBOR})
 PROJECT := lunara-common
-REGISTER_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-register:latest"
+LOGIC_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-logic:latest"
+
+build:
+	-i docker image rm $(LOGIC_IMAGE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o lllidan-logic cmd/logic/main.go
+	cp cmd/logic/Dockerfile . && docker build -t $(LOGIC_IMAGE) .
+	rm -f Dockerfile && rm -f lllidan-logic
+	docker push $(LOGIC_IMAGE)
 
 mod:
 	go mod download
