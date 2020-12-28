@@ -41,6 +41,7 @@ func NewProxy(ctx context.Context, opt *ProxyOption) (wp Proxy, err error) {
 		readChan:  make(chan []byte, 4096),
 		writeChan: make(chan []byte, 4096),
 		conn:      c,
+		status:    true,
 		ctx:       subCtx,
 		cancel:    cancel,
 	}
@@ -56,6 +57,7 @@ type proxy struct {
 	writeChan chan []byte
 	conn      *websocket.Conn
 	once      sync.Once
+	status    bool
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -66,6 +68,11 @@ func (p *proxy) Id() int32 {
 
 func (p *proxy) Close() {
 	p.once.Do(func() {
+		p.status = false
+		p.cancel()
+		if err := p.conn.Close(); err != nil {
+			klog.V(2).Info(err)
+		}
 	})
 }
 
@@ -74,8 +81,12 @@ func (p *proxy) HandlerRead() <-chan []byte {
 }
 
 const ProxyWriteTimeout = "err: proxy write timeout 1s"
+const ProxyClose = "err: proxy has been closed"
 
 func (p *proxy) HandlerWrite(data []byte) error {
+	if !p.status {
+		return fmt.Errorf(ProxyClose)
+	}
 	timeout := time.After(time.Second * 1)
 	select {
 	case <-timeout:

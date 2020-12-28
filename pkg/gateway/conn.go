@@ -106,7 +106,7 @@ func (cs *connections) newConn(w http.ResponseWriter, r *http.Request, opt *Prox
 		ctx:                   ctx,
 		cancel:                cancel,
 	}
-	go c.keepAlive()
+	//go c.keepAlive()
 	go c.readPump()
 	go c.writePump()
 	return c, nil
@@ -169,6 +169,7 @@ func (c *conn) readPump() {
 		}
 		if err = c.handler.HandlerWrite(data); err != nil {
 			klog.V(2).Info(err)
+			return
 		}
 	}
 }
