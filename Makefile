@@ -3,6 +3,7 @@
 HARBOR_DOMAIN := $(shell echo ${HARBOR})
 PROJECT := lunara-common
 LOGIC_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-logic:latest"
+GATEWAY_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-gateway:latest"
 
 build:
 	-i docker image rm $(LOGIC_IMAGE)
@@ -10,6 +11,13 @@ build:
 	cp cmd/logic/Dockerfile . && docker build -t $(LOGIC_IMAGE) .
 	rm -f Dockerfile && rm -f lllidan-logic
 	docker push $(LOGIC_IMAGE)
+
+build-ga:
+	-i docker image rm $(GATEWAY_IMAGE)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o lllidan-gateway cmd/gateway/main.go
+	cp cmd/gateway/Dockerfile . && docker build -t $(GATEWAY_IMAGE) .
+	rm -f Dockerfile && rm -f lllidan-gateway
+	docker push $(GATEWAY_IMAGE)
 
 mod:
 	go mod download
