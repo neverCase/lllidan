@@ -20,6 +20,22 @@ type Logic struct {
 type Gateway struct {
 	ListenPort        int               `json:"listenPort" yaml:"listenPort"`
 	KubernetesService KubernetesService `json:"kubernetesService" yaml:"kubernetesService"`
+	Routes            []Route           `json:"routes" yaml:"routes"`
+}
+
+type Route struct {
+	Name       string      `json:"name" yaml:"name"`
+	Scheme     string      `json:"scheme" yaml:"scheme"`
+	Host       string      `json:"host" yaml:"host"`
+	Path       string      `json:"path" yaml:"path"`
+	Parameters []Parameter `json:"parameters" yaml:"parameters"`
+}
+
+type Parameter struct {
+	Key          string `json:"key" yaml:"key"`
+	IsRequired   bool   `json:"isRequired" yaml:"isRequired"`
+	IsDynamic    bool   `json:"isDynamic" yaml:"isDynamic"`
+	DefaultValue string `json:"defaultValue" yaml:"defaultValue"`
 }
 
 type Config struct {

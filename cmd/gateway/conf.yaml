@@ -1,14 +1,28 @@
 # This is the configuration file of the Lllidan
 Logic:
-  listenPort: 12306
+  listenPort: 13666
   kubernetesService:
     name: 0.0.0.0
     port: 12306
     nodePort: 12306
 
 Gateway:
-  listenPort: 12306
+  listenPort: 8088
   kubernetesService:
     name: hso-server-gateway
-    port: 12306
-    nodePort: 12307
+    port: 8088
+    nodePort: 8088
+  routes:
+    - name: game
+      scheme: ws
+      host: 0.0.0.0:12306
+      path: /:service/:token
+      parameters:
+        - key: service
+          isRequired: true
+          isDynamic: false
+          defaultValue: "game"
+        - key: token
+          isRequired: true
+          isDynamic: true
+          defaultValue: ""
