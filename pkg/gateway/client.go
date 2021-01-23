@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/nevercase/lllidan/pkg/config"
+	"github.com/nevercase/lllidan/pkg/libs/env"
 	"github.com/nevercase/lllidan/pkg/logic"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
@@ -46,7 +47,7 @@ func NewClient(conf *config.Config, opt *Option) (*Client, error) {
 		return nil, err
 	}
 	var hostname string
-	if hostname, err = GetHostName(); err != nil {
+	if hostname, err = env.GetHostName(); err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())

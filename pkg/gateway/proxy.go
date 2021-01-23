@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/nevercase/lllidan/pkg/libs/env"
 	"k8s.io/klog/v2"
 	"net/url"
 	"sync"
@@ -26,7 +27,7 @@ type Proxy interface {
 // NewProxy return the Proxy interface
 func NewProxy(ctx context.Context, opt *ProxyOption) (wp Proxy, err error) {
 	var hostname string
-	if hostname, err = GetHostName(); err != nil {
+	if hostname, err = env.GetHostName(); err != nil {
 		return nil, err
 	}
 	var c *websocket.Conn
