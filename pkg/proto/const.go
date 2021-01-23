@@ -3,6 +3,7 @@ package proto
 const (
 	RouterDashboard = "/dashboard"
 	RouterGateway   = "/gateway"
+	RouterWorker    = "/worker"
 )
 
 const (
