@@ -12,23 +12,22 @@ import (
 )
 
 type Server struct {
-	c           *config.Config
-	server      *http.Server
-	connections *connections
-	manager     *manager
-	ctx         context.Context
+	c       *config.Config
+	server  *http.Server
+	manager *Manager
+	ctx     context.Context
 }
 
 func Init(c *config.Config) *Server {
 	s := &Server{
-		c:           c,
-		connections: NewConnections(context.Background()),
-		manager:     newManager(),
+		c:       c,
+		manager: NewManager(context.Background()),
 	}
 	router := gin.New()
 	router.Use(cors.Default())
-	router.GET(proto.RouterDashboard, s.wsHandlerDashboard)
 	router.GET(proto.RouterGateway, s.wsHandlerGateway)
+	router.GET(proto.RouterWorker, s.wsHandlerWorker)
+	router.GET(proto.RouterDashboard, s.wsHandlerDashboard)
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", c.Logic.ListenPort),
 		Handler: router,
@@ -50,10 +49,14 @@ func (s *Server) Shutdown() {
 
 }
 
-func (s *Server) wsHandlerDashboard(c *gin.Context) {
-	s.connections.handler(c.Writer, c.Request, connTypeDashboard, s.handlerDashboard)
+func (s *Server) wsHandlerGateway(c *gin.Context) {
+	//s.manager.gateways.Handler(c.Writer, c.Request, s.handlerGateway)
 }
 
-func (s *Server) wsHandlerGateway(c *gin.Context) {
-	s.connections.handler(c.Writer, c.Request, connTypeGateway, s.handlerGateway)
+func (s *Server) wsHandlerWorker(c *gin.Context) {
+	//s.manager.dashboards.Handler(c.Writer, c.Request, s.manager.handlerDashboard)
+}
+
+func (s *Server) wsHandlerDashboard(c *gin.Context) {
+	//s.manager.dashboards.Handler(c.Writer, c.Request, s.manager.handlerDashboard)
 }
