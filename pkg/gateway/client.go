@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/nevercase/lllidan/pkg/config"
-	"github.com/nevercase/lllidan/pkg/libs/env"
+	"github.com/nevercase/lllidan/pkg/env"
 	"github.com/nevercase/lllidan/pkg/logic"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"

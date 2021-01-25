@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/nevercase/lllidan/pkg/libs/env"
+	"github.com/nevercase/lllidan/pkg/env"
 	"k8s.io/klog/v2"
 	"net/url"
 	"sync"
