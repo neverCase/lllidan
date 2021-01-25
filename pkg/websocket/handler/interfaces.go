@@ -1,6 +1,6 @@
 package handler
 
-type Handler interface {
+type Interface interface {
 	Close()
 	Handler(data []byte) (res []byte, err error)
 	RegisterConnWriteChan(ch chan<- []byte)

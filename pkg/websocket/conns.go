@@ -67,7 +67,7 @@ func shardKey(id int32) string {
 	return fmt.Sprintf("%d", id)
 }
 
-func (cs *Connections) Handler(w http.ResponseWriter, r *http.Request, handler handler.Handler) {
+func (cs *Connections) Handler(w http.ResponseWriter, r *http.Request, handler handler.Interface) {
 	client, err := cs.newConn(w, r, handler)
 	if err != nil {
 		klog.V(2).Info(err)
@@ -112,7 +112,7 @@ func (cs *Connections) SendToOne(data []byte, id int32) bool {
 	}
 }
 
-func (cs *Connections) newConn(w http.ResponseWriter, r *http.Request, handler handler.Handler) (*conn, error) {
+func (cs *Connections) newConn(w http.ResponseWriter, r *http.Request, handler handler.Interface) (*conn, error) {
 	client, err := upGrader.Upgrade(w, r, nil)
 	if err != nil {
 		klog.V(2).Info(err)
@@ -143,7 +143,7 @@ func (cs *Connections) newConn(w http.ResponseWriter, r *http.Request, handler h
 type conn struct {
 	id                    int32
 	conn                  *websocket.Conn
-	handler               handler.Handler
+	handler               handler.Interface
 	writeChan             chan []byte
 	lastPingTime          time.Time
 	keepAliveTimeoutInSec int64
