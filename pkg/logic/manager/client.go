@@ -7,13 +7,14 @@ import (
 	"sync"
 )
 
-type clientHandler func(req *proto.Request) (res []byte, err error)
+type clientHandler func(req *proto.Request, cid int32) (res []byte, err error)
 
 type client struct {
 	sync.Once
+	id             int32
 	router         string
 	managerHandler clientHandler
-	clearChan      chan<- int32
+	removeChan     chan<- int32
 	outputChan     chan<- []byte
 	pingFunc       func()
 	closeFunc      func()
@@ -24,12 +25,21 @@ type client struct {
 func NewClient(ctx context.Context, router string, mh clientHandler) *client {
 	sub, cancel := context.WithCancel(ctx)
 	c := &client{
+		id:             0,
 		router:         router,
 		managerHandler: mh,
 		ctx:            sub,
 		cancel:         cancel,
 	}
 	return c
+}
+
+func (c *client) RegisterId(id int32) {
+	c.id = id
+}
+
+func (c *client) RegisterRemoveChan(ch chan<- int32) {
+	c.removeChan = ch
 }
 
 func (c *client) RegisterConnWriteChan(ch chan<- []byte) {
@@ -54,13 +64,14 @@ func (c *client) Handler(in []byte) (res []byte, err error) {
 	case proto.ServiceAPIPing:
 		c.pingFunc()
 	default:
-		return c.managerHandler(req)
+		return c.managerHandler(req, c.id)
 	}
 	return res, nil
 }
 
 func (c *client) Close() {
 	c.Once.Do(func() {
+		c.removeChan <- c.id
+		c.cancel()
 	})
 }
-

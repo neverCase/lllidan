@@ -51,6 +51,7 @@ func (s *Server) Shutdown() {
 }
 
 func (s *Server) wsHandlerGateway(c *gin.Context) {
+	s.manager.Handler(c.Writer, c.Request, proto.RouterGateway)
 	//s.manager.gateways.Handler(c.Writer, c.Request, s.handlerGateway)
 }
 

@@ -131,6 +131,7 @@ func (cs *Connections) newConn(w http.ResponseWriter, r *http.Request, handler h
 		ctx:                   ctx,
 		cancel:                cancel,
 	}
+	handler.RegisterId(c.id)
 	handler.RegisterConnWriteChan(c.writeChan)
 	handler.RegisterConnPing(c.ping)
 	handler.RegisterConnClose(c.close)

@@ -5,7 +5,7 @@ import (
 	cmap "github.com/nevercase/concurrent-map"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
-	"github.com/nevercase/lllidan/pkg/websocket/handler"
+	"net/http"
 )
 
 type Manager struct {
@@ -17,26 +17,22 @@ type Manager struct {
 
 func NewManager(ctx context.Context) *Manager {
 	m := &Manager{
-		gateways: &gatewayHub{
-			connections: websocket.NewConnections(ctx),
-			items:       make(map[string]*proto.Gateway, 0),
-		},
+		gateways:   newGatewayHub(ctx),
 		workers:    websocket.NewConnections(ctx),
 		dashboards: websocket.NewConnections(ctx),
 		handlers:   cmap.New(),
 	}
+	go m.loopClearGateway()
 	return m
 }
 
-func (m *Manager) handlerWorker(req *proto.Request) (res []byte, err error) {
 
-	return res, nil
-}
-
-func (m *Manager) handlerDashboard(req *proto.Request) (res []byte, err error) {
-	return res, nil
-}
-
-func (m *Manager) Handler() handler.Interface {
-	return &client{}
+func (m *Manager) Handler(w http.ResponseWriter, r *http.Request, router string) {
+	switch router {
+	case proto.RouterGateway:
+		m.gateways.connections.Handler(w, r, NewClient(context.Background(), router, m.handlerGateway))
+	case proto.RouterWorker:
+	case proto.RouterDashboard:
+	}
+	return
 }
