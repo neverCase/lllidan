@@ -16,6 +16,7 @@ const (
 	ServiceAPIPing            ServiceAPI = "ping"
 	ServiceAPIGatewayRegister ServiceAPI = "gatewayRegister"
 	ServiceAPIGatewayList     ServiceAPI = "gatewayList"
+	ServiceAPIWorkerRegister  ServiceAPI = "workerRegister"
 	ServiceAPIMultiplex       ServiceAPI = "multiplex"
 	// ServiceAPIKickAddress was only used in client
 	ServiceAPIKickAddress ServiceAPI = "kick"

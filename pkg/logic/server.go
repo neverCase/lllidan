@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/nevercase/lllidan/pkg/config"
+	manager2 "github.com/nevercase/lllidan/pkg/logic/manager"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -14,14 +15,14 @@ import (
 type Server struct {
 	c       *config.Config
 	server  *http.Server
-	manager *Manager
+	manager *manager2.Manager
 	ctx     context.Context
 }
 
 func Init(c *config.Config) *Server {
 	s := &Server{
 		c:       c,
-		manager: NewManager(context.Background()),
+		manager: manager2.NewManager(context.Background()),
 	}
 	router := gin.New()
 	router.Use(cors.Default())

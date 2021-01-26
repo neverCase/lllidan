@@ -60,23 +60,23 @@ func (s *Server) handlerGateway(data []byte, ping func(), outputChan chan<- []by
 	switch req.ServiceAPI {
 	case proto.ServiceAPIPing:
 		ping()
-	case proto.ServiceAPIGatewayRegister:
-		obj := &proto.Gateway{}
-		if err = obj.Unmarshal(req.Data[0]); err != nil {
-			klog.V(2).Info(err)
-			return nil, err
-		}
-		s.manager.gatewayRegister(obj)
-		// todo sync to all the gateway clients
-		res, err = s.manager.listGateway()
-		if err != nil {
-			klog.V(2).Info(err)
-			return nil, err
-		}
-		s.connections.gatewayChan <- res
-		// todo sync to all the dashboards
-	case proto.ServiceAPIKickAddress:
-		s.connections.gatewayChan <- data
+	//case proto.ServiceAPIGatewayRegister:
+	//	obj := &proto.Gateway{}
+	//	if err = obj.Unmarshal(req.Data[0]); err != nil {
+	//		klog.V(2).Info(err)
+	//		return nil, err
+	//	}
+	//	s.manager.gatewayRegister(obj)
+	//	// todo sync to all the gateway clients
+	//	res, err = s.manager.listGateway()
+	//	if err != nil {
+	//		klog.V(2).Info(err)
+	//		return nil, err
+	//	}
+	//	s.connections.gatewayChan <- res
+	//	// todo sync to all the dashboards
+	//case proto.ServiceAPIKickAddress:
+	//	s.connections.gatewayChan <- data
 	}
 	return res, nil
 }
