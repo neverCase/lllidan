@@ -3,8 +3,8 @@ Logic:
   listenPort: 13666
   kubernetesService:
     name: 0.0.0.0
-    port: 12306
-    nodePort: 12306
+    port: 13666
+    nodePort: 13666
 
 Gateway:
   listenPort: 8088
