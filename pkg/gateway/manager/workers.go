@@ -38,11 +38,25 @@ func (wh *workerHub) update(in *proto.WorkerList) {
 		t[address(v.Ip, v.Port)] = v
 	}
 	// new online
-
+	wh.Lock()
+	defer wh.Unlock()
+	for k, v := range t {
+		a := v
+		if _, ok := wh.workers[k]; !ok {
+			wh.workers[k] = wh.newWorker(&a)
+		}
+	}
 	// cancel offline
+	for k, v := range wh.workers {
+		if _, ok := t[k]; !ok {
+			// remove
+			v.option.Cancel()
+			delete(wh.workers, k)
+		}
+	}
 }
 
-func (wh *workerHub) newWorker(w *proto.Worker) {
+func (wh *workerHub) newWorker(w *proto.Worker) *worker {
 	opt := websocket.NewOption(
 		context.Background(),
 		wh.hostname,
@@ -53,20 +67,27 @@ func (wh *workerHub) newWorker(w *proto.Worker) {
 		option: opt,
 	}
 	go worker.readPump(wh.readChan)
+	go websocket.NewClientWithReconnect(opt)
+	return worker
 }
 
 func (wh *workerHub) SendToAll(in []byte) {
 	wh.RLock()
 	defer wh.RUnlock()
+	var wg sync.WaitGroup
+	wg.Add(len(wh.workers))
 	for _, v := range wh.workers {
-		v.client.Option().WriteHandlerChan <- in
+		go func(opt *websocket.Option) {
+			opt.Send(in)
+			wg.Done()
+		}(v.option)
 	}
+	wg.Wait()
 }
 
 type worker struct {
 	worker *proto.Worker
 	option *websocket.Option
-	client *websocket.Client
 }
 
 func (w *worker) readPump(handleChan chan<- []byte) {

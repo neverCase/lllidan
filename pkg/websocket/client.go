@@ -18,20 +18,52 @@ func NewOption(ctx context.Context, hostname string, address string, path string
 		Path:             path,
 		ReadHandlerChan:  make(chan []byte, 4096),
 		WriteHandlerChan: make(chan []byte, 4096),
+		Status:           OptionInActive,
 		ctx:              sub,
 		cancelFunc:       cancel,
 	}
 }
 
+type OptionStatus string
+
+const (
+	OptionActive   OptionStatus = "active"
+	OptionInActive OptionStatus = "inactive"
+	OptionClosed   OptionStatus = "closed"
+)
+
 type Option struct {
+	rw               sync.RWMutex
 	once             sync.Once
 	Hostname         string
 	Address          string
 	Path             string
 	ReadHandlerChan  chan []byte
 	WriteHandlerChan chan []byte
+	Status           OptionStatus
 	ctx              context.Context
 	cancelFunc       context.CancelFunc
+}
+
+func (o *Option) Send(in []byte) {
+	o.rw.RLock()
+	defer o.rw.RUnlock()
+	switch o.Status {
+	case OptionActive:
+		o.WriteHandlerChan <- in
+	case OptionInActive, OptionClosed:
+		klog.Infof("option skip sending message due to the status was:v", o.Status)
+	}
+}
+
+func (o *Option) ChangeStatus(s OptionStatus) {
+	o.rw.Lock()
+	defer o.rw.Unlock()
+	switch o.Status {
+	case OptionClosed:
+	case OptionActive, OptionInActive:
+		o.Status = s
+	}
 }
 
 func (o *Option) Done() <-chan struct{} {
@@ -40,6 +72,7 @@ func (o *Option) Done() <-chan struct{} {
 
 func (o *Option) Cancel() {
 	o.once.Do(func() {
+		o.ChangeStatus(OptionClosed)
 		o.cancelFunc()
 	})
 }
@@ -54,9 +87,12 @@ func NewClient(opt *Option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	sub, cancel := context.WithCancel(opt.ctx)
 	c := &Client{
-		opt:  opt,
-		conn: a,
+		opt:    opt,
+		conn:   a,
+		ctx:    sub,
+		cancel: cancel,
 	}
 	go c.readPump()
 	go c.writePump()
@@ -77,7 +113,7 @@ func (c *Client) Option() *Option {
 
 func (c *Client) Close() {
 	c.Once.Do(func() {
-		c.opt.cancelFunc()
+		c.cancel()
 	})
 }
 
@@ -87,7 +123,7 @@ func (c *Client) Ping(in []byte) {
 	defer tick.Stop()
 	for {
 		select {
-		case <-c.opt.ctx.Done():
+		case <-c.ctx.Done():
 			return
 		case <-tick.C:
 			c.opt.WriteHandlerChan <- in
@@ -120,7 +156,7 @@ func (c *Client) writePump() {
 				klog.V(2).Info(err)
 				return
 			}
-		case <-c.opt.ctx.Done():
+		case <-c.ctx.Done():
 			return
 		}
 	}
