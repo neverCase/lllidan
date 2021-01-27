@@ -10,15 +10,41 @@ import (
 	"time"
 )
 
+func NewOption(ctx context.Context, hostname string, address string, path string) *Option {
+	sub, cancel := context.WithCancel(ctx)
+	return &Option{
+		Hostname:         hostname,
+		Address:          address,
+		Path:             path,
+		ReadHandlerChan:  make(chan []byte, 4096),
+		WriteHandlerChan: make(chan []byte, 4096),
+		ctx:              sub,
+		cancelFunc:       cancel,
+	}
+}
+
 type Option struct {
+	once             sync.Once
 	Hostname         string
 	Address          string
 	Path             string
 	ReadHandlerChan  chan []byte
 	WriteHandlerChan chan []byte
+	ctx              context.Context
+	cancelFunc       context.CancelFunc
 }
 
-func NewClient(ctx context.Context, opt *Option) (*Client, error) {
+func (o *Option) Done() <-chan struct{} {
+	return o.ctx.Done()
+}
+
+func (o *Option) Cancel() {
+	o.once.Do(func() {
+		o.cancelFunc()
+	})
+}
+
+func NewClient(opt *Option) (*Client, error) {
 	u := url.URL{
 		Scheme: "ws",
 		Host:   opt.Address,
@@ -28,12 +54,9 @@ func NewClient(ctx context.Context, opt *Option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	sub, cancel := context.WithCancel(ctx)
 	c := &Client{
-		opt:    opt,
-		conn:   a,
-		ctx:    sub,
-		cancel: cancel,
+		opt:  opt,
+		conn: a,
 	}
 	go c.readPump()
 	go c.writePump()
@@ -42,15 +65,19 @@ func NewClient(ctx context.Context, opt *Option) (*Client, error) {
 
 type Client struct {
 	sync.Once
-	opt         *Option
-	conn        *websocket.Conn
-	ctx         context.Context
-	cancel      context.CancelFunc
+	opt    *Option
+	conn   *websocket.Conn
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+func (c *Client) Option() *Option {
+	return c.opt
 }
 
 func (c *Client) Close() {
 	c.Once.Do(func() {
-		c.cancel()
+		c.opt.cancelFunc()
 	})
 }
 
@@ -60,7 +87,7 @@ func (c *Client) Ping(in []byte) {
 	defer tick.Stop()
 	for {
 		select {
-		case <-c.ctx.Done():
+		case <-c.opt.ctx.Done():
 			return
 		case <-tick.C:
 			c.opt.WriteHandlerChan <- in
@@ -93,7 +120,7 @@ func (c *Client) writePump() {
 				klog.V(2).Info(err)
 				return
 			}
-		case <-c.ctx.Done():
+		case <-c.opt.ctx.Done():
 			return
 		}
 	}

@@ -8,16 +8,24 @@ import (
 	"sync"
 )
 
-func NewWorkerHub() *workerHub {
+func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
 	wh := &workerHub{
-		workers: make(map[string]*worker, 0),
+		hostname:  hostname,
+		workers:   make(map[string]*worker, 0),
+		ctx:       ctx,
+		readChan:  make(chan []byte, 4096),
+		writeChan: make(chan []byte, 4096),
 	}
 	return wh
 }
 
 type workerHub struct {
 	sync.RWMutex
-	workers map[string]*worker
+	hostname  string
+	workers   map[string]*worker
+	ctx       context.Context
+	readChan  chan []byte
+	writeChan chan []byte
 }
 
 func address(ip string, port int32) string {
@@ -35,13 +43,43 @@ func (wh *workerHub) update(in *proto.WorkerList) {
 }
 
 func (wh *workerHub) newWorker(w *proto.Worker) {
+	opt := websocket.NewOption(
+		context.Background(),
+		wh.hostname,
+		address(w.Ip, w.Port),
+		proto.RouterGateway)
+	worker := &worker{
+		worker: w,
+		option: opt,
+	}
+	go worker.readPump(wh.readChan)
+}
 
+func (wh *workerHub) SendToAll(in []byte) {
+	wh.RLock()
+	defer wh.RUnlock()
+	for _, v := range wh.workers {
+		v.client.Option().WriteHandlerChan <- in
+	}
 }
 
 type worker struct {
 	worker *proto.Worker
 	option *websocket.Option
 	client *websocket.Client
-	ctx    context.Context
-	cancel context.CancelFunc
+}
+
+func (w *worker) readPump(handleChan chan<- []byte) {
+	defer w.option.Cancel()
+	for {
+		select {
+		case <-w.option.Done():
+			return
+		case in, isClose := <-w.option.ReadHandlerChan:
+			if !isClose {
+				return
+			}
+			handleChan <- in
+		}
+	}
 }
