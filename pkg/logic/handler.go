@@ -3,41 +3,40 @@ package logic
 import (
 	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
-	"sync"
 )
 
-type manager struct {
-	mu            sync.RWMutex
-	gatewayIncrId int32
-	gateways      map[string]proto.Gateway
-}
-
-func newManager() *manager {
-	return &manager{
-		gatewayIncrId: 0,
-		gateways:      make(map[string]proto.Gateway, 0),
-	}
-}
-
-func (m *manager) gatewayRegister(gateway *proto.Gateway) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, ok := m.gateways[gateway.Hostname]; ok {
-
-	} else {
-		m.gateways[gateway.Hostname] = *gateway
-	}
-}
-
-func (m *manager) listGateway() (res []byte, err error) {
-	response := &proto.GatewayList{
-		Items: make([]proto.Gateway, 0),
-	}
-	for _, v := range m.gateways {
-		response.Items = append(response.Items, v)
-	}
-	return response.Marshal()
-}
+//type manager struct {
+//	mu            sync.RWMutex
+//	gatewayIncrId int32
+//	gateways      map[string]proto.Gateway
+//}
+//
+//func newManager() *manager {
+//	return &manager{
+//		gatewayIncrId: 0,
+//		gateways:      make(map[string]proto.Gateway, 0),
+//	}
+//}
+//
+//func (m *manager) gatewayRegister(gateway *proto.Gateway) {
+//	m.mu.Lock()
+//	defer m.mu.Unlock()
+//	if _, ok := m.gateways[gateway.Hostname]; ok {
+//
+//	} else {
+//		m.gateways[gateway.Hostname] = *gateway
+//	}
+//}
+//
+//func (m *manager) listGateway() (res []byte, err error) {
+//	response := &proto.GatewayList{
+//		Items: make([]proto.Gateway, 0),
+//	}
+//	for _, v := range m.gateways {
+//		response.Items = append(response.Items, v)
+//	}
+//	return response.Marshal()
+//}
 
 func (s *Server) handlerDashboard(data []byte, ping func(), outputChan chan<- []byte) (res []byte, err error) {
 	req := &proto.Request{}
