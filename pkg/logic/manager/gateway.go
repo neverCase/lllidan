@@ -53,8 +53,13 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 		m.gateways.Lock()
 		m.gateways.items[id] = ga
 		m.gateways.Unlock()
-	// todo push to all
-	case proto.ServiceAPIWorkerList:
+		// todo push to all
 	}
 	return res, nil
+}
+
+func (m *Manager) updateGatewayList() error {
+	m.gateways.RLock()
+	m.gateways.RUnlock()
+	return nil
 }

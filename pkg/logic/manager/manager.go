@@ -10,7 +10,7 @@ import (
 
 type Manager struct {
 	gateways   *gatewayHub
-	workers    *websocket.Connections
+	workers    *workerHub
 	dashboards *websocket.Connections
 	handlers   cmap.ConcurrentMap
 }
@@ -18,7 +18,7 @@ type Manager struct {
 func NewManager(ctx context.Context) *Manager {
 	m := &Manager{
 		gateways:   newGatewayHub(ctx),
-		workers:    websocket.NewConnections(ctx),
+		workers:    newWorkerHub(ctx),
 		dashboards: websocket.NewConnections(ctx),
 		handlers:   cmap.New(),
 	}
