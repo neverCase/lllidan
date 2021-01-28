@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+const (
+	WriteToChannelTimeoutInMS   = 1000
+	RetryConnectionDurationInMS = 3000
+)
+
 func NewOption(ctx context.Context, hostname string, address string, path string) *Option {
 	sub, cancel := context.WithCancel(ctx)
 	return &Option{
@@ -21,6 +26,8 @@ func NewOption(ctx context.Context, hostname string, address string, path string
 		Status:           OptionInActive,
 		ctx:              sub,
 		cancelFunc:       cancel,
+		writeTimeout:     WriteToChannelTimeoutInMS,
+		retryDuration:    RetryConnectionDurationInMS,
 	}
 }
 
@@ -43,6 +50,8 @@ type Option struct {
 	Status           OptionStatus
 	ctx              context.Context
 	cancelFunc       context.CancelFunc
+	retryDuration    int64
+	writeTimeout     int64
 }
 
 func (o *Option) Send(in []byte) {
@@ -50,7 +59,11 @@ func (o *Option) Send(in []byte) {
 	defer o.rw.RUnlock()
 	switch o.Status {
 	case OptionActive:
-		o.WriteHandlerChan <- in
+		select {
+		case <-time.After(time.Millisecond * time.Duration(o.writeTimeout)):
+			klog.Infof("option send message failed due to write to channel timeout:%vms", o.writeTimeout)
+		case o.WriteHandlerChan <- in:
+		}
 	case OptionInActive, OptionClosed:
 		klog.Infof("option skip sending message due to the status was:v", o.Status)
 	}

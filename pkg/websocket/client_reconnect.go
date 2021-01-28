@@ -15,7 +15,7 @@ func NewClientWithReconnect(opt *Option) {
 			client, err := NewClient(opt)
 			if err != nil {
 				klog.V(2).Info(err)
-				time.Sleep(time.Second * 5)
+				time.Sleep(time.Millisecond * time.Duration(opt.retryDuration))
 				continue
 			}
 			opt.ChangeStatus(OptionActive)
