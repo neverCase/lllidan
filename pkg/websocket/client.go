@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
 	"net/url"
 	"sync"
@@ -117,6 +118,10 @@ func (o *Option) Cancel() {
 }
 
 func NewClient(opt *Option) (*Client, error) {
+	data, err := PingData()
+	if err != nil {
+		return nil, err
+	}
 	u := url.URL{
 		Scheme: "ws",
 		Host:   opt.Address,
@@ -135,6 +140,7 @@ func NewClient(opt *Option) (*Client, error) {
 	}
 	go c.readPump()
 	go c.writePump()
+	go c.ping(data)
 	return c, nil
 }
 
@@ -156,7 +162,7 @@ func (c *Client) Close() {
 	})
 }
 
-func (c *Client) Ping(in []byte) {
+func (c *Client) ping(in []byte) {
 	defer c.Close()
 	tick := time.NewTicker(time.Second * time.Duration(ConnectionTimeoutInSec/2))
 	defer tick.Stop()
@@ -200,3 +206,13 @@ func (c *Client) writePump() {
 		}
 	}
 }
+
+func PingData() (data []byte, err error) {
+	req := &proto.Request{
+		ServiceAPI: proto.ServiceAPIPing,
+		Data:       make([][]byte, 0),
+	}
+	return req.Marshal()
+}
+
+

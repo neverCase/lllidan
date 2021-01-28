@@ -14,6 +14,7 @@ type ServiceAPI string
 
 const (
 	ServiceAPIPing            ServiceAPI = "ping"
+	ServiceAPIPong            ServiceAPI = "Pong"
 	ServiceAPIGatewayRegister ServiceAPI = "gatewayRegister"
 	ServiceAPIGatewayList     ServiceAPI = "gatewayList"
 	ServiceAPIWorkerRegister  ServiceAPI = "workerRegister"
