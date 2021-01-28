@@ -29,9 +29,9 @@ func NewManager(ctx context.Context) *Manager {
 func (m *Manager) Handler(w http.ResponseWriter, r *http.Request, router string) {
 	switch router {
 	case proto.RouterGateway:
-		m.gateways.connections.Handler(w, r, NewClient(context.Background(), router, m.handlerGateway))
+		m.gateways.connections.Handler(w, r, NewClient(context.Background(), router, m.handlerGateway, m.gateways.clearChan))
 	case proto.RouterWorker:
-		m.workers.connections.Handler(w, r, NewClient(context.Background(), router, m.handlerWorker))
+		m.workers.connections.Handler(w, r, NewClient(context.Background(), router, m.handlerWorker, m.workers.clearChan))
 	case proto.RouterDashboard:
 	}
 	return

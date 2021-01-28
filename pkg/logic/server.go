@@ -56,6 +56,7 @@ func (s *Server) wsHandlerGateway(c *gin.Context) {
 }
 
 func (s *Server) wsHandlerWorker(c *gin.Context) {
+	s.manager.Handler(c.Writer, c.Request, proto.RouterWorker)
 	//s.manager.dashboards.Handler(c.Writer, c.Request, s.manager.handlerDashboard)
 }
 

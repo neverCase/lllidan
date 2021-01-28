@@ -177,8 +177,7 @@ func (c *conn) ping() {
 
 func (c *conn) close() {
 	c.closeOnce.Do(func() {
-		// todo
-		//go c.handler.Close()
+		go c.handler.Close()
 		c.cancel()
 		c.removedChan <- c.id
 		if err := c.conn.Close(); err != nil {

@@ -22,12 +22,13 @@ type client struct {
 	cancel         context.CancelFunc
 }
 
-func NewClient(ctx context.Context, router string, mh clientHandler) *client {
+func NewClient(ctx context.Context, router string, mh clientHandler, removeChan chan<- int32) *client {
 	sub, cancel := context.WithCancel(ctx)
 	c := &client{
 		id:             0,
 		router:         router,
 		managerHandler: mh,
+		removeChan:     removeChan,
 		ctx:            sub,
 		cancel:         cancel,
 	}
