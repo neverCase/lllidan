@@ -53,6 +53,7 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 		m.gateways.Lock()
 		m.gateways.items[id] = ga
 		m.gateways.Unlock()
+		klog.Infof("handlerGateway items:%v", m.gateways.items)
 		// todo push to all
 	}
 	return res, nil

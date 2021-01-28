@@ -17,10 +17,10 @@ const (
 
 func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
 	wh := &workerHub{
-		hostname:  hostname,
-		workers:   make(map[string]*worker, 0),
-		ctx:       ctx,
-		readChan:  make(chan []byte, 4096),
+		hostname: hostname,
+		workers:  make(map[string]*worker, 0),
+		ctx:      ctx,
+		readChan: make(chan []byte, 4096),
 	}
 	go wh.packageMessage()
 	return wh
@@ -28,10 +28,10 @@ func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
 
 type workerHub struct {
 	sync.RWMutex
-	hostname  string
-	workers   map[string]*worker
-	ctx       context.Context
-	readChan  chan []byte
+	hostname string
+	workers  map[string]*worker
+	ctx      context.Context
+	readChan chan []byte
 }
 
 func address(ip string, port int32) string {
@@ -43,7 +43,7 @@ func (wh *workerHub) packageMessage() {
 		select {
 		case <-wh.ctx.Done():
 			return
-		case o, isClose := <- wh.readChan:
+		case o, isClose := <-wh.readChan:
 			if !isClose {
 				return
 			}
@@ -134,7 +134,11 @@ func (wh *workerHub) SendToAll(in []byte) {
 	wg.Add(len(wh.workers))
 	for _, v := range wh.workers {
 		go func(opt *websocket.Option) {
-			opt.Send(in)
+			if err := opt.Send(in); err != nil {
+				klog.V(2).Infof(
+					"hostname:%s address:%s path:%s err:%v",
+					opt.Hostname, opt.Address, opt.Path, err)
+			}
 			wg.Done()
 		}(v.option)
 	}

@@ -2,8 +2,8 @@ package websocket
 
 import (
 	"context"
+	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/nevercase/lllidan/pkg/logic"
 	"k8s.io/klog/v2"
 	"net/url"
 	"sync"
@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	ConnectionTimeoutInSec      = 10
 	WriteToChannelTimeoutInMS   = 1000
 	RetryConnectionDurationInMS = 3000
 )
@@ -18,16 +19,17 @@ const (
 func NewOption(ctx context.Context, hostname string, address string, path string) *Option {
 	sub, cancel := context.WithCancel(ctx)
 	return &Option{
-		Hostname:         hostname,
-		Address:          address,
-		Path:             path,
-		Status:           OptionInActive,
-		readHandlerChan:  make(chan []byte, 4096),
-		writeHandlerChan: make(chan []byte, 4096),
-		ctx:              sub,
-		cancelFunc:       cancel,
-		writeTimeout:     WriteToChannelTimeoutInMS,
-		retryDuration:    RetryConnectionDurationInMS,
+		Hostname:          hostname,
+		Address:           address,
+		Path:              path,
+		Status:            OptionInActive,
+		registerFunctions: make([]OptionRegisterFunction, 0),
+		readHandlerChan:   make(chan []byte, 4096),
+		writeHandlerChan:  make(chan []byte, 4096),
+		ctx:               sub,
+		cancelFunc:        cancel,
+		writeTimeout:      WriteToChannelTimeoutInMS,
+		retryDuration:     RetryConnectionDurationInMS,
 	}
 }
 
@@ -39,38 +41,58 @@ const (
 	OptionClosed   OptionStatus = "closed"
 )
 
+type OptionRegisterFunction func() error
+
 type Option struct {
-	rw               sync.RWMutex
-	once             sync.Once
-	Hostname         string
-	Address          string
-	Path             string
-	Status           OptionStatus
-	readHandlerChan  chan []byte
-	writeHandlerChan chan []byte
-	ctx              context.Context
-	cancelFunc       context.CancelFunc
-	retryDuration    int64
-	writeTimeout     int64
+	rw                sync.RWMutex
+	once              sync.Once
+	Hostname          string
+	Address           string
+	Path              string
+	Status            OptionStatus
+	registerFunctions []OptionRegisterFunction
+	readHandlerChan   chan []byte
+	writeHandlerChan  chan []byte
+	ctx               context.Context
+	cancelFunc        context.CancelFunc
+	retryDuration     int64
+	writeTimeout      int64
+}
+
+func (o *Option) RegisterFunc(do ...OptionRegisterFunction) {
+	for _, v := range do {
+		o.registerFunctions = append(o.registerFunctions, v)
+	}
+}
+
+func (o *Option) Prepare() error {
+	for _, v := range o.registerFunctions {
+		if err := v(); err != nil {
+			klog.V(2).Infof("Prepare do func err:%v", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func (o *Option) Read() <-chan []byte {
 	return o.readHandlerChan
 }
 
-func (o *Option) Send(in []byte) {
+func (o *Option) Send(in []byte) error {
 	o.rw.RLock()
 	defer o.rw.RUnlock()
 	switch o.Status {
 	case OptionActive:
 		select {
 		case <-time.After(time.Millisecond * time.Duration(o.writeTimeout)):
-			klog.Infof("option send message failed due to write to channel timeout:%v ms", o.writeTimeout)
+			return fmt.Errorf("option send message failed due to write to channel timeout:%v ms", o.writeTimeout)
 		case o.writeHandlerChan <- in:
 		}
 	case OptionInActive, OptionClosed:
-		klog.Infof("option skip sending message due to the status was:%v", o.Status)
+		return fmt.Errorf("option skip sending message due to the status was:%v", o.Status)
 	}
+	return nil
 }
 
 func (o *Option) ChangeStatus(s OptionStatus) {
@@ -136,7 +158,7 @@ func (c *Client) Close() {
 
 func (c *Client) Ping(in []byte) {
 	defer c.Close()
-	tick := time.NewTicker(time.Second * time.Duration(logic.WebsocketConnectionTimeout/2))
+	tick := time.NewTicker(time.Second * time.Duration(ConnectionTimeoutInSec/2))
 	defer tick.Stop()
 	for {
 		select {

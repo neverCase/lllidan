@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+const (
+	NodeName          = "NODE_NAME"
+	HostIP            = "HOST_IP"
+	PodName           = "POD_NAME"
+	PodNamespace      = "POD_NAMESPACE"
+	PodIP             = "POD_IP"
+	PodServiceAccount = "POD_SERVICE_ACCOUNT"
+)
+
 // getHostName gets the hostname of the host machine if the container is started by docker run --net=host
 func getHostName() (string, error) {
 	cmd := exec.Command("/bin/hostname")
@@ -30,4 +39,13 @@ func GetHostName() (string, error) {
 	}
 	klog.Info("get HOST_NAME from env failed, is env.(\"HOST_NAME\") already set? Will use hostname instead")
 	return getHostName()
+}
+
+// GetPodIp returns the ip which has been allocated to the pod in the k8s cluster
+func GetPodIP() (string, error) {
+	podIp := os.Getenv(PodIP)
+	if podIp != "" {
+		return podIp, nil
+	}
+	return "", fmt.Errorf("no podIp get from '%s' in the container", PodIP)
 }
