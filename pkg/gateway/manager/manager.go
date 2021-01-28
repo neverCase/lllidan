@@ -33,10 +33,12 @@ func NewManger(ctx context.Context, conf *config.Config) (*Manager, error) {
 		conf:     conf,
 		hostname: hostname,
 		workers:  NewWorkerHub(ctx, hostname),
-		logic:    InitLogic(u, hostname),
+		logic:    InitLogic(ctx, u, hostname),
 	}
 	// start logic
 	m.logic.option.RegisterFunc(m.registerGateway)
 	go websocket.NewClientWithReconnect(m.logic.option)
+	// handler logic message
+	go m.loopLogicMessage(ctx)
 	return m, nil
 }
