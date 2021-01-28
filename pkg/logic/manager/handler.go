@@ -9,7 +9,7 @@ import (
 
 type clientHandler func(req *proto.Request, cid int32) (res []byte, err error)
 
-type client struct {
+type handler struct {
 	sync.Once
 	id             int32
 	router         string
@@ -22,9 +22,9 @@ type client struct {
 	cancel         context.CancelFunc
 }
 
-func NewClient(ctx context.Context, router string, mh clientHandler, removeChan chan<- int32) *client {
+func NewHandler(ctx context.Context, router string, mh clientHandler, removeChan chan<- int32) *handler {
 	sub, cancel := context.WithCancel(ctx)
-	c := &client{
+	c := &handler{
 		id:             0,
 		router:         router,
 		managerHandler: mh,
@@ -35,27 +35,27 @@ func NewClient(ctx context.Context, router string, mh clientHandler, removeChan 
 	return c
 }
 
-func (c *client) RegisterId(id int32) {
+func (c *handler) RegisterId(id int32) {
 	c.id = id
 }
 
-func (c *client) RegisterRemoveChan(ch chan<- int32) {
+func (c *handler) RegisterRemoveChan(ch chan<- int32) {
 	c.removeChan = ch
 }
 
-func (c *client) RegisterConnWriteChan(ch chan<- []byte) {
+func (c *handler) RegisterConnWriteChan(ch chan<- []byte) {
 	c.outputChan = ch
 }
 
-func (c *client) RegisterConnClose(do func()) {
+func (c *handler) RegisterConnClose(do func()) {
 	c.closeFunc = do
 }
 
-func (c *client) RegisterConnPing(do func()) {
+func (c *handler) RegisterConnPing(do func()) {
 	c.pingFunc = do
 }
 
-func (c *client) Handler(in []byte) (res []byte, err error) {
+func (c *handler) Handler(in []byte) (res []byte, err error) {
 	req := &proto.Request{}
 	if err = req.Unmarshal(in); err != nil {
 		klog.V(2).Info(err)
@@ -70,7 +70,7 @@ func (c *client) Handler(in []byte) (res []byte, err error) {
 	return res, nil
 }
 
-func (c *client) Close() {
+func (c *handler) Close() {
 	c.Once.Do(func() {
 		c.removeChan <- c.id
 		c.cancel()
