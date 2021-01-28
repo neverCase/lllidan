@@ -1,9 +1,9 @@
 # This is the configuration file of the Lllidan
 Logic:
-  listenPort: 12306
+  listenPort: 13666
   kubernetesService:
     name: hso-server-logic
-    port: 12306
+    port: 13666
     nodePort: 12306
 
 Gateway:
