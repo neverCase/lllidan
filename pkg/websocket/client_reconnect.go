@@ -18,10 +18,10 @@ func NewClientWithReconnect(opt *Option) {
 				time.Sleep(time.Millisecond * time.Duration(opt.retryDuration))
 				continue
 			}
+			opt.ChangeStatus(OptionActive)
 			if err := opt.Prepare(); err != nil {
 				return
 			}
-			opt.ChangeStatus(OptionActive)
 			select {
 			case <-opt.Done():
 				return
