@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
+	"k8s.io/klog/v2"
 	"sync"
+	"time"
+)
+
+const (
+	multiplexWaitingTimeInMS = 20
+	multiplexMaxLength       = 200
 )
 
 func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
@@ -14,8 +21,8 @@ func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
 		workers:   make(map[string]*worker, 0),
 		ctx:       ctx,
 		readChan:  make(chan []byte, 4096),
-		writeChan: make(chan []byte, 4096),
 	}
+	go wh.packageMessage()
 	return wh
 }
 
@@ -25,11 +32,60 @@ type workerHub struct {
 	workers   map[string]*worker
 	ctx       context.Context
 	readChan  chan []byte
-	writeChan chan []byte
 }
 
 func address(ip string, port int32) string {
 	return fmt.Sprintf("%s:%d", ip, port)
+}
+
+func (wh *workerHub) packageMessage() {
+	for {
+		select {
+		case <-wh.ctx.Done():
+			return
+		case o, isClose := <- wh.readChan:
+			if !isClose {
+				return
+			}
+			req := &proto.Request{
+				ServiceAPI: proto.ServiceAPIMultiplex,
+			}
+			res := make([][]byte, multiplexMaxLength)
+			index := 0
+			res[index] = o
+			after := time.After(time.Millisecond * multiplexWaitingTimeInMS)
+			timeout := false
+			for {
+				select {
+				case <-wh.ctx.Done():
+					return
+				case <-after:
+					timeout = true
+					break
+				case appendMsg, isClose := <-wh.readChan:
+					if !isClose {
+						break
+					}
+					index++
+					res[index] = appendMsg
+				}
+				if timeout {
+					break
+				}
+				if index+1 >= multiplexMaxLength {
+					break
+				}
+			}
+			req.Data = res[:index+1]
+			klog.Info("req:", *req)
+			data, err := req.Marshal()
+			if err != nil {
+				klog.V(2).Info(err)
+				continue
+			}
+			wh.SendToAll(data)
+		}
+	}
 }
 
 func (wh *workerHub) update(in *proto.WorkerList) {
@@ -96,7 +152,7 @@ func (w *worker) readPump(handleChan chan<- []byte) {
 		select {
 		case <-w.option.Done():
 			return
-		case in, isClose := <-w.option.ReadHandlerChan:
+		case in, isClose := <-w.option.Read():
 			if !isClose {
 				return
 			}

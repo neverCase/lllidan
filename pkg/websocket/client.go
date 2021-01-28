@@ -21,9 +21,9 @@ func NewOption(ctx context.Context, hostname string, address string, path string
 		Hostname:         hostname,
 		Address:          address,
 		Path:             path,
-		ReadHandlerChan:  make(chan []byte, 4096),
-		WriteHandlerChan: make(chan []byte, 4096),
 		Status:           OptionInActive,
+		readHandlerChan:  make(chan []byte, 4096),
+		writeHandlerChan: make(chan []byte, 4096),
 		ctx:              sub,
 		cancelFunc:       cancel,
 		writeTimeout:     WriteToChannelTimeoutInMS,
@@ -45,13 +45,17 @@ type Option struct {
 	Hostname         string
 	Address          string
 	Path             string
-	ReadHandlerChan  chan []byte
-	WriteHandlerChan chan []byte
 	Status           OptionStatus
+	readHandlerChan  chan []byte
+	writeHandlerChan chan []byte
 	ctx              context.Context
 	cancelFunc       context.CancelFunc
 	retryDuration    int64
 	writeTimeout     int64
+}
+
+func (o *Option) Read() <-chan []byte {
+	return o.readHandlerChan
 }
 
 func (o *Option) Send(in []byte) {
@@ -61,11 +65,11 @@ func (o *Option) Send(in []byte) {
 	case OptionActive:
 		select {
 		case <-time.After(time.Millisecond * time.Duration(o.writeTimeout)):
-			klog.Infof("option send message failed due to write to channel timeout:%vms", o.writeTimeout)
-		case o.WriteHandlerChan <- in:
+			klog.Infof("option send message failed due to write to channel timeout:%v ms", o.writeTimeout)
+		case o.writeHandlerChan <- in:
 		}
 	case OptionInActive, OptionClosed:
-		klog.Infof("option skip sending message due to the status was:v", o.Status)
+		klog.Infof("option skip sending message due to the status was:%v", o.Status)
 	}
 }
 
@@ -139,7 +143,7 @@ func (c *Client) Ping(in []byte) {
 		case <-c.ctx.Done():
 			return
 		case <-tick.C:
-			c.opt.WriteHandlerChan <- in
+			c.opt.writeHandlerChan <- in
 		}
 	}
 }
@@ -153,7 +157,7 @@ func (c *Client) readPump() {
 			klog.V(2).Info(err)
 			return
 		}
-		c.opt.ReadHandlerChan <- message
+		c.opt.readHandlerChan <- message
 	}
 }
 
@@ -161,7 +165,7 @@ func (c *Client) writePump() {
 	defer c.Close()
 	for {
 		select {
-		case msg, isClose := <-c.opt.WriteHandlerChan:
+		case msg, isClose := <-c.opt.writeHandlerChan:
 			if !isClose {
 				return
 			}
