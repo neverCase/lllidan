@@ -30,12 +30,12 @@ func (l *logic) readPump(handleChan chan<- []byte) {
 	}
 }
 
-func InitLogic(ctx context.Context, url url.URL, hostname string) *logic {
+func InitLogic(ctx context.Context, u url.URL, hostname string) *logic {
 	opt := websocket.NewOption(
 		ctx,
 		hostname,
-		url.Host,
-		proto.RouterGateway)
+		u.Host,
+		u.Path)
 	l := &logic{
 		option:   opt,
 		readChan: make(chan []byte, 4096),
