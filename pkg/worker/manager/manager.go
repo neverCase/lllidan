@@ -38,6 +38,8 @@ func NewManager(ctx context.Context, conf *config.Config) (*Manager, error) {
 	// start logic
 	m.logic.option.RegisterFunc(m.registerWorker)
 	go websocket.NewClientWithReconnect(m.logic.option)
+	// clear gateway
+	go m.loopClearGateway()
 	return m, nil
 }
 
