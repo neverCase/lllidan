@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"github.com/nevercase/lllidan/pkg/env"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
 	"k8s.io/klog/v2"
@@ -15,12 +16,13 @@ const (
 	multiplexMaxLength       = 200
 )
 
-func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
+func NewWorkerHub(ctx context.Context, hostname string, registerData []byte) *workerHub {
 	wh := &workerHub{
-		hostname: hostname,
-		workers:  make(map[string]*worker, 0),
-		ctx:      ctx,
-		readChan: make(chan []byte, 4096),
+		hostname:     hostname,
+		workers:      make(map[string]*worker, 0),
+		ctx:          ctx,
+		readChan:     make(chan []byte, 4096),
+		registerData: registerData,
 	}
 	go wh.packageMessage()
 	return wh
@@ -28,10 +30,11 @@ func NewWorkerHub(ctx context.Context, hostname string) *workerHub {
 
 type workerHub struct {
 	sync.RWMutex
-	hostname string
-	workers  map[string]*worker
-	ctx      context.Context
-	readChan chan []byte
+	hostname     string
+	workers      map[string]*worker
+	ctx          context.Context
+	readChan     chan []byte
+	registerData []byte
 }
 
 func address(ip string, port int32) string {
@@ -123,6 +126,9 @@ func (wh *workerHub) newWorker(w *proto.Worker) *worker {
 		option: opt,
 	}
 	go worker.readPump(wh.readChan)
+	opt.RegisterFunc(func() error {
+		return opt.Send(wh.registerData)
+	})
 	go websocket.NewClientWithReconnect(opt)
 	return worker
 }
@@ -163,4 +169,31 @@ func (w *worker) readPump(handleChan chan<- []byte) {
 			handleChan <- in
 		}
 	}
+}
+
+func GetConnectToWorkerRequest(hostname string, listenPort int32) (data []byte, err error) {
+	podIp, err := env.GetPodIP()
+	if err != nil {
+		return data, err
+	}
+	gw := &proto.Gateway{
+		Hostname: hostname,
+		Ip:       podIp,
+		Port:     listenPort,
+		NodePort: 0,
+	}
+	if data, err = gw.Marshal(); err != nil {
+		klog.V(2).Info(err)
+		return data, err
+	}
+	req := &proto.Request{
+		ServiceAPI: proto.ServiceAPIGatewayConnect,
+		Data:       make([][]byte, 0),
+	}
+	req.Data = append(req.Data, data)
+	if data, err = req.Marshal(); err != nil {
+		klog.V(2).Info(err)
+		return data, err
+	}
+	return data, nil
 }

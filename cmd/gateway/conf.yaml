@@ -26,3 +26,10 @@ Gateway:
           isRequired: true
           isDynamic: true
           defaultValue: ""
+
+Worker:
+  listenPort: 13667
+  kubernetesService:
+    name: hso-server-logic
+    port: 13667
+    nodePort: 8088
