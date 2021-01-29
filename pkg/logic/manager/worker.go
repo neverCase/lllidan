@@ -56,6 +56,7 @@ func (m *Manager) handlerWorker(req *proto.Request, id int32) (res []byte, err e
 		m.workers.Lock()
 		m.workers.items[id] = worker
 		m.workers.Unlock()
+		klog.Infof("handlerWorker items:%v", m.workers.items)
 		// todo push to all
 		if err = m.updateWorkerList(); err != nil {
 			klog.V(2).Info(err)
@@ -75,10 +76,8 @@ func (m *Manager) updateWorkerList() error {
 		w.Items = append(w.Items, t)
 	}
 	m.workers.RUnlock()
-	res := &proto.Response{
+	res := &proto.Request{
 		ServiceAPI: proto.ServiceAPIWorkerList,
-		Code:       0,
-		Message:    "",
 		Data:       make([][]byte, 0),
 	}
 	if d, err := w.Marshal(); err != nil {
@@ -87,10 +86,11 @@ func (m *Manager) updateWorkerList() error {
 	} else {
 		res.Data = append(res.Data, d)
 	}
+	klog.Info("updateWorkerList res:", *res)
 	if data, err := res.Marshal(); err != nil {
+		return err
+	} else {
 		m.gateways.connections.SendToAll(data)
 		return nil
-	} else {
-		return err
 	}
 }
