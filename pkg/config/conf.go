@@ -38,9 +38,15 @@ type Parameter struct {
 	DefaultValue string `json:"defaultValue" yaml:"defaultValue"`
 }
 
+type Worker struct {
+	ListenPort        int               `json:"listenPort" yaml:"listenPort"`
+	KubernetesService KubernetesService `json:"kubernetesService" yaml:"kubernetesService"`
+}
+
 type Config struct {
 	Logic   Logic   `yaml:"Logic"`
 	Gateway Gateway `yaml:"Gateway"`
+	Worker  Worker  `yaml:"Worker"`
 }
 
 func Init(configFile string) *Config {

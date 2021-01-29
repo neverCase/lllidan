@@ -39,3 +39,6 @@ logic:
 
 gateway:
 	go run cmd/gateway/main.go -configPath=./cmd/gateway/conf.yaml -alsologtostderr=true -v=4
+
+worker:
+	go run cmd/worker/main.go -configPath=./cmd/gateway/conf.yaml -alsologtostderr=true -v=4
