@@ -29,10 +29,14 @@ func NewManger(ctx context.Context, conf *config.Config) (*Manager, error) {
 		Host:   fmt.Sprintf("%s:%d", conf.Logic.KubernetesService.Name, conf.Logic.KubernetesService.Port),
 		Path:   proto.RouterGateway,
 	}
+	data, err := GetConnectToWorkerRequest(hostname, int32(conf.Gateway.ListenPort))
+	if err != nil {
+		return nil, err
+	}
 	m := &Manager{
 		conf:     conf,
 		hostname: hostname,
-		workers:  NewWorkerHub(ctx, hostname),
+		workers:  NewWorkerHub(ctx, hostname, data),
 		logic:    InitLogic(ctx, u, hostname),
 	}
 	// start logic
