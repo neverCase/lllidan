@@ -1,4 +1,4 @@
-package manager
+package handler
 
 import (
 	"context"
@@ -35,27 +35,27 @@ func NewHandler(ctx context.Context, router string, mh clientHandler, removeChan
 	return c
 }
 
-func (c *handler) RegisterId(id int32) {
-	c.id = id
+func (h *handler) RegisterId(id int32) {
+	h.id = id
 }
 
-func (c *handler) RegisterRemoveChan(ch chan<- int32) {
-	c.removeChan = ch
+func (h *handler) RegisterRemoveChan(ch chan<- int32) {
+	h.removeChan = ch
 }
 
-func (c *handler) RegisterConnWriteChan(ch chan<- []byte) {
-	c.outputChan = ch
+func (h *handler) RegisterConnWriteChan(ch chan<- []byte) {
+	h.outputChan = ch
 }
 
-func (c *handler) RegisterConnClose(do func()) {
-	c.closeFunc = do
+func (h *handler) RegisterConnClose(do func()) {
+	h.closeFunc = do
 }
 
-func (c *handler) RegisterConnPing(do func()) {
-	c.pingFunc = do
+func (h *handler) RegisterConnPing(do func()) {
+	h.pingFunc = do
 }
 
-func (c *handler) Handler(in []byte) (res []byte, err error) {
+func (h *handler) Handler(in []byte) (res []byte, err error) {
 	req := &proto.Request{}
 	if err = req.Unmarshal(in); err != nil {
 		klog.V(2).Info(err)
@@ -63,16 +63,17 @@ func (c *handler) Handler(in []byte) (res []byte, err error) {
 	}
 	switch req.ServiceAPI {
 	case proto.ServiceAPIPing:
-		c.pingFunc()
+		h.pingFunc()
 	default:
-		return c.managerHandler(req, c.id)
+		return h.managerHandler(req, h.id)
 	}
 	return res, nil
 }
 
-func (c *handler) Close() {
-	c.Once.Do(func() {
-		c.removeChan <- c.id
-		c.cancel()
+func (h *handler) Close() {
+	h.Once.Do(func() {
+		h.removeChan <- h.id
+		h.cancel()
 	})
 }
+
