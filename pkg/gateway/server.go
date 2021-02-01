@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nevercase/lllidan/pkg/config"
 	"github.com/nevercase/lllidan/pkg/gateway/manager"
+	"github.com/nevercase/lllidan/pkg/proto"
 	"k8s.io/klog/v2"
 	"net/http"
 	"net/url"
@@ -36,6 +37,7 @@ func Init(c *config.Config) *Server {
 	for _, v := range c.Gateway.Routes {
 		router.GET(v.Path, s.handler)
 	}
+	router.GET(proto.RouterGatewayApi, s.wsHandlerApi)
 	server := &http.Server{
 		Addr:    fmt.Sprintf("0.0.0.0:%d", c.Gateway.ListenPort),
 		Handler: router,
@@ -60,20 +62,16 @@ func (s *Server) handler(c *gin.Context) {
 		if len(v.Parameters) == 0 {
 			continue
 		}
-		params := make([]string, len(v.Parameters))
-		for k, p := range v.Parameters {
-			if k == 0 {
-				svc := c.Param(p.Key)
-				if svc != p.DefaultValue {
-					break
-				}
-				params[k] = p.DefaultValue
+		params := make([]string, 0)
+		for _, p := range v.Parameters {
+			if !p.IsDynamic {
+				params = append(params, p.DefaultValue)
 			} else {
-				if p.IsDynamic {
-					params[k] = c.Param(p.Key)
-				} else {
-					params[k] = p.DefaultValue
+				val := c.Param(p.Key)
+				if p.IsRequired && val == "" {
+					continue
 				}
+				params = append(params, val)
 			}
 		}
 		u = url.URL{
@@ -88,4 +86,8 @@ func (s *Server) handler(c *gin.Context) {
 		return
 	}
 	s.connections.handler(c.Writer, c.Request, u)
+}
+
+func (s *Server) wsHandlerApi(c *gin.Context) {
+	s.manager.Handler(c.Writer, c.Request, proto.RouterGatewayApi)
 }

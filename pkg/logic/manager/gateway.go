@@ -55,7 +55,6 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 		m.gateways.Unlock()
 		klog.Infof("handlerGateway items:%v", m.gateways.items)
 		// todo push to all
-		// todo push to all
 		if err = m.updateWorkerList(); err != nil {
 			klog.V(2).Info(err)
 			return res, err

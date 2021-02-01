@@ -3,11 +3,12 @@ package manager
 import (
 	"context"
 	"fmt"
-	cmap "github.com/nevercase/concurrent-map"
 	"github.com/nevercase/lllidan/pkg/config"
 	"github.com/nevercase/lllidan/pkg/env"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
+	"github.com/nevercase/lllidan/pkg/websocket/handler"
+	"net/http"
 	"net/url"
 )
 
@@ -15,8 +16,8 @@ type Manager struct {
 	conf     *config.Config
 	hostname string
 	workers  *workerHub
+	apis     *apiHub
 	logic    *logic
-	handlers cmap.ConcurrentMap
 }
 
 func NewManger(ctx context.Context, conf *config.Config) (*Manager, error) {
@@ -29,14 +30,15 @@ func NewManger(ctx context.Context, conf *config.Config) (*Manager, error) {
 		Host:   fmt.Sprintf("%s:%d", conf.Logic.KubernetesService.Name, conf.Logic.KubernetesService.Port),
 		Path:   proto.RouterGateway,
 	}
-	data, err := GetConnectToWorkerRequest(hostname, int32(conf.Gateway.ListenPort))
+	req, err := GetConnectToWorkerRequest(hostname, int32(conf.Gateway.ListenPort))
 	if err != nil {
 		return nil, err
 	}
 	m := &Manager{
 		conf:     conf,
 		hostname: hostname,
-		workers:  NewWorkerHub(ctx, hostname, data),
+		workers:  NewWorkerHub(ctx, hostname, req),
+		apis:     NewApiHub(ctx),
 		logic:    InitLogic(ctx, u, hostname),
 	}
 	// start logic
@@ -45,4 +47,12 @@ func NewManger(ctx context.Context, conf *config.Config) (*Manager, error) {
 	// handler logic message
 	go m.loopLogicMessage(ctx)
 	return m, nil
+}
+
+func (m *Manager) Handler(w http.ResponseWriter, r *http.Request, router string) {
+	switch router {
+	case proto.RouterGatewayApi:
+		m.apis.connections.Handler(w, r, handler.NewHandler(context.Background(), router, m.handlerApi, m.apis.clearChan))
+	}
+	return
 }
