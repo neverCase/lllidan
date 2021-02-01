@@ -16,7 +16,7 @@ import (
 type Server struct {
 	c           *config.Config
 	server      *http.Server
-	connections *connections
+	connections *proxyConnections
 	manager     *manager.Manager
 	ctx         context.Context
 }

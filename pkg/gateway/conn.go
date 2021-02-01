@@ -25,8 +25,8 @@ var upGrader = websocket.Upgrader{
 	},
 }
 
-func NewConnections(ctx context.Context) *connections {
-	cs := &connections{
+func NewConnections(ctx context.Context) *proxyConnections {
+	cs := &proxyConnections{
 		autoIncr:    0,
 		members:     cmap.New(),
 		removedChan: make(chan int32, 4096),
@@ -36,14 +36,14 @@ func NewConnections(ctx context.Context) *connections {
 	return cs
 }
 
-type connections struct {
+type proxyConnections struct {
 	autoIncr    int32
 	members     cmap.ConcurrentMap
 	removedChan chan int32
 	ctx         context.Context
 }
 
-func (cs *connections) remove() {
+func (cs *proxyConnections) remove() {
 	for {
 		select {
 		case <-cs.ctx.Done():
@@ -67,7 +67,7 @@ func shardKey(id int32) string {
 	return fmt.Sprintf("%d", id)
 }
 
-func (cs *connections) handler(w http.ResponseWriter, r *http.Request, url url.URL) {
+func (cs *proxyConnections) handler(w http.ResponseWriter, r *http.Request, url url.URL) {
 	opt := &ProxyOption{
 		Url:          url,
 		IsMaintained: true,
@@ -85,7 +85,7 @@ func (cs *connections) handler(w http.ResponseWriter, r *http.Request, url url.U
 	t.Set(shardKey, client)
 }
 
-func (cs *connections) newConn(w http.ResponseWriter, r *http.Request, opt *ProxyOption) (*conn, error) {
+func (cs *proxyConnections) newConn(w http.ResponseWriter, r *http.Request, opt *ProxyOption) (*conn, error) {
 	client, err := upGrader.Upgrade(w, r, nil)
 	if err != nil {
 		klog.V(2).Info(err)
