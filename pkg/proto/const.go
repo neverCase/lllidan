@@ -1,9 +1,10 @@
 package proto
 
 const (
-	RouterDashboard = "/dashboard"
-	RouterGateway   = "/gateway"
-	RouterWorker    = "/worker"
+	RouterDashboard  = "/dashboard"
+	RouterGateway    = "/gateway"
+	RouterGatewayApi = "/gateway/api/v1"
+	RouterWorker     = "/worker"
 )
 
 const (

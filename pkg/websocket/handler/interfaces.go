@@ -7,5 +7,6 @@ type Interface interface {
 	RegisterConnClose(do func())
 	RegisterConnPing(do func())
 	Handler(data []byte) (res []byte, err error)
+	Run()
 	Close()
 }

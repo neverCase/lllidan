@@ -37,6 +37,10 @@ type gateway struct {
 	sendNumber int32
 }
 
+func (gh *gatewayHub) GatewayMessageHandler() MessageHandler {
+	return gh.messageHandler
+}
+
 func (gh *gatewayHub) newGateway(g *proto.Gateway) *gateway {
 	return &gateway{
 		gateway:    g,

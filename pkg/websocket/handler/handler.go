@@ -70,10 +70,11 @@ func (h *handler) Handler(in []byte) (res []byte, err error) {
 	return res, nil
 }
 
+func (h *handler) Run() {}
+
 func (h *handler) Close() {
 	h.Once.Do(func() {
 		h.removeChan <- h.id
 		h.cancel()
 	})
 }
-

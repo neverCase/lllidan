@@ -16,7 +16,7 @@ Gateway:
     - name: game
       scheme: ws
       host: 0.0.0.0:12306
-      path: /:service/:token
+      path: /game/:token
       parameters:
         - key: service
           isRequired: true

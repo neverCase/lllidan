@@ -48,6 +48,10 @@ func Init(c *config.Config) *Server {
 	return s
 }
 
+func (s *Server) GatewayMessageHandler() manager.MessageHandler {
+	return s.manager.GatewayMessageHandler()
+}
+
 func (s *Server) Shutdown() {}
 
 func (s *Server) wsHandlerGateway(c *gin.Context) {

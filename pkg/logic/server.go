@@ -52,14 +52,11 @@ func (s *Server) Shutdown() {
 
 func (s *Server) wsHandlerGateway(c *gin.Context) {
 	s.manager.Handler(c.Writer, c.Request, proto.RouterGateway)
-	//s.manager.gateways.Handler(c.Writer, c.Request, s.handlerGateway)
 }
 
 func (s *Server) wsHandlerWorker(c *gin.Context) {
 	s.manager.Handler(c.Writer, c.Request, proto.RouterWorker)
-	//s.manager.dashboards.Handler(c.Writer, c.Request, s.manager.handlerDashboard)
 }
 
 func (s *Server) wsHandlerDashboard(c *gin.Context) {
-	//s.manager.dashboards.Handler(c.Writer, c.Request, s.manager.handlerDashboard)
 }
