@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nevercase/lllidan/pkg/config"
 	"github.com/nevercase/lllidan/pkg/proto"
+	"github.com/nevercase/lllidan/pkg/websocket/handler"
 	"github.com/nevercase/lllidan/pkg/worker/manager"
 	"k8s.io/klog/v2"
 	"net/http"
@@ -48,7 +49,7 @@ func Init(c *config.Config) *Server {
 	return s
 }
 
-func (s *Server) GatewayMessageHandler() manager.MessageHandler {
+func (s *Server) GatewayMessageHandler() handler.MessageHandler {
 	return s.manager.GatewayMessageHandler()
 }
 

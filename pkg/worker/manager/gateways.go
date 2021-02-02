@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
+	"github.com/nevercase/lllidan/pkg/websocket/handler"
 	"k8s.io/klog/v2"
 	"sync"
 	"sync/atomic"
@@ -15,8 +16,8 @@ func newGatewayHub(ctx context.Context) *gatewayHub {
 		items:       make(map[int32]*gateway, 0),
 		clearChan:   make(chan int32, 1024),
 		messageHandler: &MessageOption{
-			ReadChan:         make(chan interface{}, 4096),
-			WriteChan:        make(chan interface{}, 4096),
+			ReadChan:         make(chan []byte, 4096),
+			WriteChan:        make(chan []byte, 4096),
 			writeTimeoutInMs: 1000,
 		},
 		ctx: ctx,
@@ -37,7 +38,7 @@ type gateway struct {
 	sendNumber int32
 }
 
-func (gh *gatewayHub) GatewayMessageHandler() MessageHandler {
+func (gh *gatewayHub) GatewayMessageHandler() handler.MessageHandler {
 	return gh.messageHandler
 }
 
@@ -103,7 +104,12 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 		// reset
 		m.gateways.resetLoadBalanceNumber()
 	default:
-		if err = m.gateways.messageHandler.writeToReadChan(req); err != nil {
+		var in []byte
+		if in, err = req.Marshal(); err != nil {
+			klog.V(2).Info(err)
+			return nil, err
+		}
+		if err = m.gateways.messageHandler.writeToReadChan(in); err != nil {
 			klog.V(2).Info(err)
 			return nil, err
 		}
@@ -111,6 +117,6 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 	return res, nil
 }
 
-func (m *Manager) GatewayMessageHandler() MessageHandler {
+func (m *Manager) GatewayMessageHandler() handler.MessageHandler {
 	return m.gateways.messageHandler
 }

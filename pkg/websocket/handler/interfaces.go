@@ -10,3 +10,8 @@ type Interface interface {
 	Run()
 	Close()
 }
+
+type MessageHandler interface {
+	Read() <-chan []byte
+	Write(in []byte) error
+}

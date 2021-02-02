@@ -5,22 +5,17 @@ import (
 	"time"
 )
 
-type MessageHandler interface {
-	Read() <-chan interface{}
-	Write(in interface{}) error
-}
-
 type MessageOption struct {
-	ReadChan         chan interface{}
-	WriteChan        chan interface{}
+	ReadChan         chan []byte
+	WriteChan        chan []byte
 	writeTimeoutInMs int64
 }
 
-func (mo *MessageOption) Read() <-chan interface{} {
+func (mo *MessageOption) Read() <-chan []byte {
 	return mo.ReadChan
 }
 
-func (mo *MessageOption) Write(in interface{}) error {
+func (mo *MessageOption) Write(in []byte) error {
 	select {
 	case <-time.After(time.Millisecond * time.Duration(mo.writeTimeoutInMs)):
 		return fmt.Errorf("MessageOption Write failed due to write to channel timeout:%v ms", mo.writeTimeoutInMs)
@@ -29,7 +24,7 @@ func (mo *MessageOption) Write(in interface{}) error {
 	return nil
 }
 
-func (mo *MessageOption) writeToReadChan(in interface{}) error {
+func (mo *MessageOption) writeToReadChan(in []byte) error {
 	select {
 	case <-time.After(time.Millisecond * time.Duration(mo.writeTimeoutInMs)):
 		return fmt.Errorf("MessageOption writeToReadChan failed due to write to channel timeout:%v ms", mo.writeTimeoutInMs)
