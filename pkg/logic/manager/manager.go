@@ -24,6 +24,7 @@ func NewManager(ctx context.Context) *Manager {
 		handlers:   cmap.New(),
 	}
 	go m.loopClearGateway()
+	go m.loopClearWorker()
 	return m
 }
 
