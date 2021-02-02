@@ -11,7 +11,7 @@ import (
 )
 
 func newGatewayHub(ctx context.Context) *gatewayHub {
-	return &gatewayHub{
+	gh := &gatewayHub{
 		connections: websocket.NewConnections(ctx),
 		items:       make(map[int32]*gateway, 0),
 		clearChan:   make(chan int32, 1024),
@@ -22,6 +22,8 @@ func newGatewayHub(ctx context.Context) *gatewayHub {
 		},
 		ctx: ctx,
 	}
+	go gh.pushMessage()
+	return gh
 }
 
 type gatewayHub struct {
@@ -71,6 +73,23 @@ func (gh *gatewayHub) loadBalancePush(in []byte) bool {
 	}
 	atomic.AddInt32(&gh.items[id].sendNumber, 1)
 	return gh.connections.SendToOne(in, id)
+}
+
+func (gh *gatewayHub) pushMessage() {
+	for {
+		select {
+		case msg, isClose := <-gh.messageHandler.WriteChan:
+			if !isClose {
+				return
+			}
+			switch gh.loadBalancePush(msg) {
+			case true:
+				klog.Info("gatewayHub pushMessage success")
+			case false:
+				klog.Info("gatewayHub pushMessage failed")
+			}
+		}
+	}
 }
 
 func (m *Manager) loopClearGateway() {
