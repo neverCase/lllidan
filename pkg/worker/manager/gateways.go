@@ -104,6 +104,8 @@ func (m *Manager) loopClearGateway() {
 			m.gateways.Lock()
 			delete(m.gateways.items, id)
 			m.gateways.Unlock()
+			// reset
+			m.gateways.resetLoadBalanceNumber()
 		}
 	}
 }
