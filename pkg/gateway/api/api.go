@@ -36,6 +36,10 @@ func Init(ctx context.Context, u url.URL, hostname string) *Client {
 	return l
 }
 
+func (c *Client) Option() *websocket.Option {
+	return c.option
+}
+
 func (c *Client) readPump(handleChan chan<- []byte) {
 	defer c.option.Cancel()
 	for {
