@@ -2,8 +2,8 @@
 
 HARBOR_DOMAIN := $(shell echo ${HARBOR})
 PROJECT := lunara-common
-LOGIC_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-logic:latest"
-GATEWAY_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-gateway:latest"
+LOGIC_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-logic:submit"
+GATEWAY_IMAGE := "$(HARBOR_DOMAIN)/$(PROJECT)/lllidan-gateway:submit"
 
 build:
 	-i docker image rm $(LOGIC_IMAGE)
