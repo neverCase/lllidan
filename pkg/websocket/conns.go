@@ -135,6 +135,7 @@ func (cs *Connections) newConn(w http.ResponseWriter, r *http.Request, handler h
 	handler.RegisterConnWriteChan(c.writeChan)
 	handler.RegisterConnPing(c.ping)
 	handler.RegisterConnClose(c.close)
+	handler.Run()
 	go c.keepAlive()
 	go c.readPump()
 	go c.writePump()
