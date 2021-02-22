@@ -17,13 +17,14 @@ const (
 	RetryConnectionDurationInMS = 3000
 )
 
-func NewOption(ctx context.Context, hostname string, address string, path string) *Option {
+func NewOption(ctx context.Context, hostname string, address string, path string, pingData []byte) *Option {
 	sub, cancel := context.WithCancel(ctx)
 	return &Option{
 		Hostname:          hostname,
 		Address:           address,
 		Path:              path,
 		Status:            OptionInActive,
+		pingData:          pingData,
 		registerFunctions: make([]OptionRegisterFunction, 0),
 		readHandlerChan:   make(chan []byte, 4096),
 		writeHandlerChan:  make(chan []byte, 4096),
@@ -51,6 +52,7 @@ type Option struct {
 	Address           string
 	Path              string
 	Status            OptionStatus
+	pingData          []byte
 	registerFunctions []OptionRegisterFunction
 	readHandlerChan   chan []byte
 	writeHandlerChan  chan []byte
@@ -118,10 +120,6 @@ func (o *Option) Cancel() {
 }
 
 func NewClient(opt *Option) (*Client, error) {
-	data, err := PingData()
-	if err != nil {
-		return nil, err
-	}
 	u := url.URL{
 		Scheme: "ws",
 		Host:   opt.Address,
@@ -140,7 +138,7 @@ func NewClient(opt *Option) (*Client, error) {
 	}
 	go c.readPump()
 	go c.writePump()
-	go c.ping(data)
+	go c.ping(opt.pingData)
 	return c, nil
 }
 
@@ -214,5 +212,3 @@ func PingData() (data []byte, err error) {
 	}
 	return req.Marshal()
 }
-
-

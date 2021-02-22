@@ -116,11 +116,16 @@ func (wh *workerHub) update(in *proto.WorkerList) {
 }
 
 func (wh *workerHub) newWorker(w *proto.Worker) *worker {
+	data, err := websocket.PingData()
+	if err != nil {
+		klog.Fatal(err)
+	}
 	opt := websocket.NewOption(
 		context.Background(),
 		wh.hostname,
 		address(w.Ip, w.Port),
-		proto.RouterGateway)
+		proto.RouterGateway,
+		data)
 	worker := &worker{
 		worker: w,
 		option: opt,

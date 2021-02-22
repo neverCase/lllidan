@@ -22,11 +22,16 @@ func GatewayUrl(host string) url.URL {
 }
 
 func Init(ctx context.Context, u url.URL, hostname string) *Client {
+	data, err := websocket.PingData()
+	if err != nil {
+		klog.Fatal(err)
+	}
 	opt := websocket.NewOption(
 		ctx,
 		hostname,
 		u.Host,
-		u.Path)
+		u.Path,
+		data)
 	l := &Client{
 		option:   opt,
 		readChan: make(chan []byte, 4096),

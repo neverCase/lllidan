@@ -31,11 +31,16 @@ func (l *logic) readPump(handleChan chan<- []byte) {
 }
 
 func InitLogic(ctx context.Context, u url.URL, hostname string) *logic {
+	data, err := websocket.PingData()
+	if err != nil {
+		klog.Fatal(err)
+	}
 	opt := websocket.NewOption(
 		ctx,
 		hostname,
 		u.Host,
-		u.Path)
+		u.Path,
+		data)
 	l := &logic{
 		option:   opt,
 		readChan: make(chan []byte, 4096),
