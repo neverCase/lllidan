@@ -2,8 +2,8 @@ package manager
 
 import (
 	"context"
-	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
+	"github.com/nevercase/lllidan/pkg/websocket/handler"
 	"sync"
 )
 
@@ -37,11 +37,7 @@ func (a *apiHub) loopClearApi() {
 	}
 }
 
-func (m *Manager) handlerApi(req *proto.Request, id int32) (res []byte, err error) {
-	var data []byte
-	if data, err = req.Marshal(); err != nil {
-		return nil, err
-	}
-	m.workers.readChan <- data
+func (m *Manager) handlerApi(in []byte, handler handler.Interface) (res []byte, err error) {
+	m.workers.readChan <- in
 	return res, nil
 }

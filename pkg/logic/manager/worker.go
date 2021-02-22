@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
+	"github.com/nevercase/lllidan/pkg/websocket/handler"
 	"k8s.io/klog/v2"
 	"sync"
 )
@@ -45,8 +46,15 @@ func (m *Manager) loopClearWorker() {
 	}
 }
 
-func (m *Manager) handlerWorker(req *proto.Request, id int32) (res []byte, err error) {
+func (m *Manager) handlerWorker(in []byte, handler handler.Interface) (res []byte, err error) {
+	req := &proto.Request{}
+	if err = req.Unmarshal(in); err != nil {
+		klog.V(2).Info(err)
+		return nil, err
+	}
 	switch req.ServiceAPI {
+	case proto.ServiceAPIPing:
+		handler.Ping()
 	case proto.ServiceAPIWorkerRegister:
 		worker := &proto.Worker{}
 		if err = worker.Unmarshal(req.Data[0]); err != nil {
@@ -54,7 +62,7 @@ func (m *Manager) handlerWorker(req *proto.Request, id int32) (res []byte, err e
 			return nil, err
 		}
 		m.workers.Lock()
-		m.workers.items[id] = worker
+		m.workers.items[handler.Id()] = worker
 		m.workers.Unlock()
 		klog.Infof("handlerWorker items:%v", m.workers.items)
 		// todo push to all

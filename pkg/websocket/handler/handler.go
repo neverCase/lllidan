@@ -2,12 +2,10 @@ package handler
 
 import (
 	"context"
-	"github.com/nevercase/lllidan/pkg/proto"
-	"k8s.io/klog/v2"
 	"sync"
 )
 
-type clientHandler func(req *proto.Request, cid int32) (res []byte, err error)
+type clientHandler func(in []byte, h Interface) (res []byte, err error)
 
 type handler struct {
 	sync.Once
@@ -39,6 +37,10 @@ func (h *handler) RegisterId(id int32) {
 	h.id = id
 }
 
+func (h *handler) Id() int32 {
+	return h.id
+}
+
 func (h *handler) RegisterRemoveChan(ch chan<- int32) {
 	h.removeChan = ch
 }
@@ -55,19 +57,12 @@ func (h *handler) RegisterConnPing(do func()) {
 	h.pingFunc = do
 }
 
+func (h *handler) Ping() {
+	h.pingFunc()
+}
+
 func (h *handler) Handler(in []byte) (res []byte, err error) {
-	req := &proto.Request{}
-	if err = req.Unmarshal(in); err != nil {
-		klog.V(2).Info(err)
-		return nil, err
-	}
-	switch req.ServiceAPI {
-	case proto.ServiceAPIPing:
-		h.pingFunc()
-	default:
-		return h.managerHandler(req, h.id)
-	}
-	return res, nil
+	return h.managerHandler(in, h)
 }
 
 func (h *handler) Run() {}

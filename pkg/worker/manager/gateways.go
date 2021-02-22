@@ -110,8 +110,15 @@ func (m *Manager) loopClearGateway() {
 	}
 }
 
-func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err error) {
+func (m *Manager) handlerGateway(in []byte, handler handler.Interface) (res []byte, err error) {
+	req := &proto.Request{}
+	if err = req.Unmarshal(in); err != nil {
+		klog.V(2).Info(err)
+		return nil, err
+	}
 	switch req.ServiceAPI {
+	case proto.ServiceAPIPing:
+		handler.Ping()
 	case proto.ServiceAPIGatewayConnect:
 		ga := &proto.Gateway{}
 		if err = ga.Unmarshal(req.Data[0]); err != nil {
@@ -119,7 +126,7 @@ func (m *Manager) handlerGateway(req *proto.Request, id int32) (res []byte, err 
 			return nil, err
 		}
 		m.gateways.Lock()
-		m.gateways.items[id] = m.gateways.newGateway(ga)
+		m.gateways.items[handler.Id()] = m.gateways.newGateway(ga)
 		m.gateways.Unlock()
 		klog.Infof("handlerGateway items:%v", m.gateways.items)
 		// reset
