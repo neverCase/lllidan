@@ -48,6 +48,13 @@ message KickInfo {
   optional int32 id = 3;
 }
 
+// Notification
+message Notification {
+  repeated int32 ids = 1;
+
+  optional bytes message = 2;
+}
+
 message Request {
   optional string serviceApi = 1;
 

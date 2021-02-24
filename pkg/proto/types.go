@@ -43,3 +43,9 @@ type KickInfo struct {
 	ClientId string `json:"clientId" protobuf:"bytes,2,opt,name=clientId"`
 	Id       int32  `json:"id" protobuf:"bytes,3,opt,name=id"`
 }
+
+// Notification
+type Notification struct {
+	Ids     []int32 `json:"ids" protobuf:"bytes,1,opt,name=ids"`
+	Message []byte  `json:"message" protobuf:"bytes,2,opt,name=message"`
+}
