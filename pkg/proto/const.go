@@ -22,6 +22,10 @@ const (
 	ServiceAPIWorkerRegister  ServiceAPI = "workerRegister"
 	ServiceAPIWorkerList      ServiceAPI = "workerList"
 	ServiceAPIMultiplex       ServiceAPI = "multiplex"
+
 	// ServiceAPIKickAddress was only used in client
 	ServiceAPIKickAddress ServiceAPI = "kick"
+	ServiceAPIPushToOne   ServiceAPI = "pushToOne"
+	ServiceAPIPushToGroup ServiceAPI = "pushToGroup"
+	ServiceAPIPushToSome  ServiceAPI = "pushToSome"
 )
