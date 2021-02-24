@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"github.com/nevercase/lllidan/pkg/proto"
 	"github.com/nevercase/lllidan/pkg/websocket"
 	"github.com/nevercase/lllidan/pkg/websocket/handler"
 	"sync"
@@ -38,6 +39,15 @@ func (a *apiHub) loopClearApi() {
 }
 
 func (m *Manager) handlerApi(in []byte, handler handler.Interface) (res []byte, err error) {
+	req := &proto.Request{}
+	if err = req.Unmarshal(in); err != nil {
+		return nil, err
+	}
+	switch req.ServiceAPI {
+	case proto.ServiceAPIPing:
+		handler.Ping()
+		return res, nil
+	}
 	m.workers.readChan <- in
 	return res, nil
 }
