@@ -26,7 +26,19 @@ Gateway:
           isRequired: true
           isDynamic: true
           defaultValue: ""
-
+    - name: game2
+      scheme: ws
+      host: 0.0.0.0:12307
+      path: /game2/:token
+      parameters:
+        - key: service
+          isRequired: true
+          isDynamic: false
+          defaultValue: "game"
+        - key: token
+          isRequired: true
+          isDynamic: true
+          defaultValue: ""
 Worker:
   listenPort: 13667
   kubernetesService:

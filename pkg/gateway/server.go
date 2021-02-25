@@ -62,6 +62,9 @@ func (s *Server) handler(c *gin.Context) {
 		if len(v.Parameters) == 0 {
 			continue
 		}
+		if v.Path != c.FullPath() {
+			continue
+		}
 		params := make([]string, 0)
 		for _, p := range v.Parameters {
 			if !p.IsDynamic {
